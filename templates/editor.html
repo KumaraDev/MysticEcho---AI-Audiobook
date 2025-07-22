@@ -51,7 +51,7 @@
                     <input type="file" id="pdf-upload" accept=".pdf" style="display: none;">
                     
                     <!-- Save Button -->
-                    <button class="btn btn-success" id="save-btn" onclick="handleSave()">
+                    <button class="btn btn-success" id="save-btn" onclick="handleSave()" disabled>
                         <i data-feather="save" class="me-1"></i>
                         <span id="save-btn-text">Save</span>
                     </button>
@@ -82,16 +82,16 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('improve')" id="ai-improve-btn">
+                        <div class="btn-group btn-group-sm" role="group" id="ai-buttons-group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('improve')" id="ai-improve-btn" disabled>
                                 <i data-feather="cpu" class="me-1"></i>
                                 Improve
                             </button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('expand')" id="ai-expand-btn">
+                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('expand')" id="ai-expand-btn" disabled>
                                 <i data-feather="plus-square" class="me-1"></i>
                                 Expand
                             </button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('summarize')" id="ai-summarize-btn">
+                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('summarize')" id="ai-summarize-btn" disabled>
                                 <i data-feather="minus-square" class="me-1"></i>
                                 Summarize
                             </button>
@@ -104,8 +104,21 @@
                         <input type="text" id="chapter-title-input" class="form-control form-control-lg" placeholder="Chapter Title..." style="font-weight: 600;">
                     </div>
                     
-                    <!-- Main Content Editor -->
-                    <textarea id="editor-content" class="form-control border-0" style="height: 600px; resize: vertical; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6;" placeholder="Start writing your audiobook here...">{{ project.content or '' }}</textarea>
+                    <!-- Default Message (shown when no chapter is selected) -->
+                    <div id="default-editor-message" class="d-flex align-items-center justify-content-center" style="height: 600px; background-color: var(--bs-gray-100); color: var(--bs-gray-600);">
+                        <div class="text-center">
+                            <i data-feather="layers" style="width: 64px; height: 64px;" class="mb-3 text-muted"></i>
+                            <h5 class="text-muted mb-2">Select a chapter to begin editing</h5>
+                            <p class="text-muted mb-3">Choose a chapter from the sidebar or create a new one to start writing</p>
+                            <button class="btn btn-outline-primary" onclick="quickCreateChapter()">
+                                <i data-feather="plus" class="me-1"></i>
+                                Create New Chapter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Main Content Editor (hidden by default) -->
+                    <textarea id="editor-content" class="form-control border-0" style="height: 600px; resize: vertical; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; display: none;" placeholder="Start writing your audiobook here...">{{ project.content or '' }}</textarea>
                 </div>
             </div>
         </div>
@@ -121,9 +134,9 @@
                     </h6>
                 </div>
                 <div class="card-body" id="ai-suggestions-panel">
-                    <div class="text-center text-muted py-4">
+                    <div class="text-center text-muted py-4" id="ai-default-message">
                         <i data-feather="zap" style="width: 48px; height: 48px;" class="mb-3"></i>
-                        <p class="mb-0">Select text and click an AI button to get suggestions</p>
+                        <p class="mb-0">Select a chapter first, then highlight text to get AI suggestions</p>
                     </div>
                 </div>
             </div>
@@ -364,7 +377,8 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload(); // Refresh to show new chapter
+                    // Automatically open the new chapter for editing
+                    editChapterInline(data.chapter.id);
                 } else {
                     alert(data.error || 'Failed to create chapter');
                 }
@@ -374,6 +388,18 @@
                 alert('Failed to create chapter');
             });
         }
+    }
+    
+    function enableAIButtons() {
+        document.getElementById('ai-improve-btn').disabled = false;
+        document.getElementById('ai-expand-btn').disabled = false;
+        document.getElementById('ai-summarize-btn').disabled = false;
+    }
+    
+    function disableAIButtons() {
+        document.getElementById('ai-improve-btn').disabled = true;
+        document.getElementById('ai-expand-btn').disabled = true;
+        document.getElementById('ai-summarize-btn').disabled = true;
     }
     
     function editChapterInline(chapterId) {
@@ -390,6 +416,10 @@
                 document.getElementById('chapter-editor-indicator').style.display = 'flex';
                 document.getElementById('chapter-title-editor').style.display = 'block';
                 
+                // Hide default message and show editor
+                document.getElementById('default-editor-message').style.display = 'none';
+                document.getElementById('editor-content').style.display = 'block';
+                
                 // Load chapter data into editors
                 document.getElementById('chapter-title-input').value = data.title;
                 document.getElementById('editor-content').value = data.content;
@@ -397,6 +427,15 @@
                 
                 // Update save button text
                 document.getElementById('save-btn-text').textContent = 'Save Chapter';
+                
+                // Enable AI buttons and save button
+                enableAIButtons();
+                document.getElementById('save-btn').disabled = false;
+                
+                // Update AI assistant message
+                document.getElementById('ai-default-message').innerHTML = 
+                    '<i data-feather="zap" style="width: 48px; height: 48px;" class="mb-3"></i>' +
+                    '<p class="mb-0">Select text and click an AI button to get suggestions</p>';
                 
                 // Auto-save chapter content on changes
                 setupChapterAutoSave();
@@ -434,9 +473,18 @@
         document.getElementById('chapter-title-editor').style.display = 'none';
         document.getElementById('save-btn-text').textContent = 'Save';
         
-        // Load project content
-        document.getElementById('editor-content').value = originalProjectContent;
-        document.getElementById('editor-content').placeholder = 'Start writing your audiobook here...';
+        // Show default message and hide editor
+        document.getElementById('default-editor-message').style.display = 'flex';
+        document.getElementById('editor-content').style.display = 'none';
+        
+        // Disable AI buttons and save button
+        disableAIButtons();
+        document.getElementById('save-btn').disabled = true;
+        
+        // Reset AI assistant message
+        document.getElementById('ai-default-message').innerHTML = 
+            '<i data-feather="zap" style="width: 48px; height: 48px;" class="mb-3"></i>' +
+            '<p class="mb-0">Select a chapter first, then highlight text to get AI suggestions</p>';
         
         // Clear chapter auto-save interval
         clearChapterAutoSave();
