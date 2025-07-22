@@ -42,10 +42,12 @@ with app.app_context():
 from routes.auth import auth_bp
 from routes.editor import editor_bp
 from routes.dashboard import dashboard_bp
+from routes.audio import audio_bp
 
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(editor_bp, url_prefix='/editor')
 app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
+app.register_blueprint(audio_bp, url_prefix='/audio')
 
 # Root route
 @app.route('/')

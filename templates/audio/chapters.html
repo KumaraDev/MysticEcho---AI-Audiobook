@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Chapters - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i data-feather="list" class="me-2"></i>
+                        Manage Chapters
+                    </h1>
+                    <p class="text-muted">Organize your audiobook into chapters and sections</p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('editor.edit_project', project_id=project.id) }}" class="btn btn-outline-secondary">
+                        <i data-feather="edit-3" class="me-1"></i>
+                        Back to Editor
+                    </a>
+                    <a href="{{ url_for('audio.generate_audio', project_id=project.id) }}" class="btn btn-primary">
+                        <i data-feather="mic" class="me-1"></i>
+                        Generate Audio
+                    </a>
+                </div>
+            </div>
+
+            <!-- Chapters List -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="bookmark" class="me-2"></i>
+                        Detected Chapters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if chapters %}
+                        <div class="row">
+                            {% for chapter in chapters %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card border">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ chapter.title }}</h6>
+                                        <p class="card-text text-muted small">{{ chapter.content }}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">{{ chapter.word_count }} words</small>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" title="Preview">
+                                                    <i data-feather="eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-secondary" title="Edit">
+                                                    <i data-feather="edit-2"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i data-feather="book-open" style="width: 48px; height: 48px;" class="text-muted mb-3"></i>
+                            <h6 class="text-muted">No chapters detected</h6>
+                            <p class="text-muted small">Add chapter breaks to your manuscript to organize it into sections.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

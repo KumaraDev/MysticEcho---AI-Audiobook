@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Export Audiobook - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i data-feather="download" class="me-2"></i>
+                        Export Audiobook
+                    </h1>
+                    <p class="text-muted">Download your completed audiobook in various formats</p>
+                </div>
+                <a href="{{ url_for('audio.preview_audio', project_id=project.id) }}" class="btn btn-outline-secondary">
+                    <i data-feather="arrow-left" class="me-1"></i>
+                    Back to Preview
+                </a>
+            </div>
+
+            <!-- Export Options -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="package" class="me-2"></i>
+                        Export Options
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card border">
+                                <div class="card-body text-center">
+                                    <i data-feather="file-audio" style="width: 48px; height: 48px;" class="text-primary mb-3"></i>
+                                    <h6>MP3 Audio</h6>
+                                    <p class="text-muted small">Complete audiobook as a single MP3 file</p>
+                                    <button class="btn btn-outline-primary" disabled>
+                                        <i data-feather="download" class="me-1"></i>
+                                        Download MP3
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="card border">
+                                <div class="card-body text-center">
+                                    <i data-feather="folder" style="width: 48px; height: 48px;" class="text-success mb-3"></i>
+                                    <h6>Chapter Files</h6>
+                                    <p class="text-muted small">Individual MP3 files for each chapter</p>
+                                    <button class="btn btn-outline-success" disabled>
+                                        <i data-feather="download" class="me-1"></i>
+                                        Download ZIP
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i data-feather="info" class="me-2"></i>
+                        <strong>Ready for Implementation</strong><br>
+                        Export functionality will be available once audio generation is completed. Your audiobook will be packaged in professional formats ready for distribution.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

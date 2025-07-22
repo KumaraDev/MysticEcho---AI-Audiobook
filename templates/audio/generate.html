@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Generate Audio - {{ project.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i data-feather="mic" class="me-2"></i>
+                        Generate Audio
+                    </h1>
+                    <p class="text-muted">Convert your text to professional audiobook narration</p>
+                </div>
+                <a href="{{ url_for('editor.edit_project', project_id=project.id) }}" class="btn btn-outline-secondary">
+                    <i data-feather="arrow-left" class="me-1"></i>
+                    Back to Editor
+                </a>
+            </div>
+
+            <!-- Project Info -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">{{ project.title }}</h5>
+                    <p class="text-muted mb-3">{{ project.description or 'No description provided' }}</p>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <small class="text-muted">Word Count</small>
+                            <div class="fw-bold">{{ project.content.split() | length if project.content else 0 }} words</div>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Estimated Duration</small>
+                            <div class="fw-bold">{{ ((project.content.split() | length / 200) * 60) | round | int if project.content else 0 }} minutes</div>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted">Status</small>
+                            <div>
+                                <span class="badge bg-{{ 'success' if project.status == 'completed' else 'warning' if project.status == 'in_progress' else 'secondary' }}">
+                                    {{ project.status.replace('_', ' ').title() }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio Generation Panel -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="settings" class="me-2"></i>
+                        Voice Settings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="voice-type" class="form-label">Voice Type</label>
+                                <select class="form-select" id="voice-type">
+                                    <option value="alloy">Alloy (Neutral)</option>
+                                    <option value="echo">Echo (Male)</option>
+                                    <option value="fable">Fable (British Male)</option>
+                                    <option value="onyx">Onyx (Deep Male)</option>
+                                    <option value="nova">Nova (Female)</option>
+                                    <option value="shimmer">Shimmer (Soft Female)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="voice-speed" class="form-label">Speaking Speed</label>
+                                <select class="form-select" id="voice-speed">
+                                    <option value="0.8">Slow</option>
+                                    <option value="1.0" selected>Normal</option>
+                                    <option value="1.2">Fast</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Content to Convert</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="content-selection" id="full-content" value="full" checked>
+                            <label class="form-check-label" for="full-content">
+                                Complete manuscript
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="content-selection" id="chapter-content" value="chapter">
+                            <label class="form-check-label" for="chapter-content">
+                                By chapters (coming soon)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Generation Options -->
+                    <div class="alert alert-info">
+                        <i data-feather="info" class="me-2"></i>
+                        <strong>Audio Generation Ready!</strong> This feature will use OpenAI's text-to-speech API to convert your manuscript into professional audiobook narration. The generated audio will be saved to your cloud storage.
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary" id="generate-audio-btn" onclick="generateAudio()">
+                            <i data-feather="play" class="me-2"></i>
+                            Generate Audio
+                        </button>
+                        <a href="{{ url_for('audio.manage_chapters', project_id=project.id) }}" class="btn btn-outline-secondary">
+                            <i data-feather="list" class="me-2"></i>
+                            Manage Chapters
+                        </a>
+                        <a href="{{ url_for('audio.preview_audio', project_id=project.id) }}" class="btn btn-outline-info">
+                            <i data-feather="headphones" class="me-2"></i>
+                            Preview Audio
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div class="modal fade" id="audioProgressModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i data-feather="mic" class="me-2"></i>
+                    Generating Audio
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mb-0">Converting your text to speech...</p>
+                    <small class="text-muted">This may take several minutes for longer manuscripts.</small>
+                </div>
+                <div class="progress mt-3">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function generateAudio() {
+    const voiceType = document.getElementById('voice-type').value;
+    const voiceSpeed = document.getElementById('voice-speed').value;
+    const contentSelection = document.querySelector('input[name="content-selection"]:checked').value;
+    
+    const modal = new bootstrap.Modal(document.getElementById('audioProgressModal'));
+    modal.show();
+    
+    fetch(`/audio/generate_tts/{{ project.id }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            voice_settings: {
+                voice: voiceType,
+                speed: parseFloat(voiceSpeed)
+            },
+            content_selection: contentSelection
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        modal.hide();
+        
+        if (data.success) {
+            showNotification(data.message, 'info');
+            // Redirect to preview page when audio generation is implemented
+            // window.location.href = `/audio/preview/{{ project.id }}`;
+        } else {
+            showNotification(data.error || 'Failed to generate audio', 'error');
+        }
+    })
+    .catch(error => {
+        modal.hide();
+        console.error('Audio generation error:', error);
+        showNotification('Error generating audio', 'error');
+    });
+}
+
+function showNotification(message, type) {
+    const alertClass = type === 'error' ? 'alert-danger' : type === 'success' ? 'alert-success' : 'alert-info';
+    const iconName = type === 'error' ? 'alert-circle' : type === 'success' ? 'check-circle' : 'info';
+    
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        <i data-feather="${iconName}" class="me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    feather.replace();
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

@@ -37,6 +37,7 @@ The application follows a modular Flask architecture with clear separation of co
 - **auth_bp**: Handles user authentication (login/register)
 - **dashboard_bp**: Project management and overview dashboard
 - **editor_bp**: Rich text editing interface for manuscripts
+- **audio_bp**: Audio generation and audiobook creation workflow
 
 ### Service Layer
 - **AI Service**: OpenAI integration for content improvement, expansion, and summarization
@@ -57,8 +58,24 @@ The application follows a modular Flask architecture with clear separation of co
 4. **AI Enhancement**: Content can be processed through OpenAI for improvements
 5. **Auto-save**: Editor automatically saves content to prevent data loss
 6. **Version Control**: Significant changes create new project versions
-7. **Cloud Backup**: Projects are backed up to Wasabi cloud storage
-8. **Project Management**: Dashboard provides overview and project status tracking
+7. **Audio Generation**: Text-to-speech conversion using OpenAI API (ready for implementation)
+8. **Chapter Management**: Automatic chapter detection and organization
+9. **Audio Preview**: Listen to generated audiobook content
+10. **Export & Download**: Package audiobook in various formats
+11. **Cloud Backup**: Projects are backed up to Wasabi cloud storage
+12. **Project Management**: Dashboard provides overview and project status tracking
+
+## Audiobook Creation Workflow
+
+The platform now includes a complete audiobook creation workflow that guides users through:
+
+1. **✓ Write & Edit**: Complete manuscript with AI assistance and auto-save
+2. **Generate Audio**: Convert text to professional speech using OpenAI TTS
+3. **Organize Chapters**: Automatic chapter detection and management
+4. **Preview & Review**: Listen to generated audio content
+5. **Export & Download**: Get final audiobook in MP3 and other formats
+
+Each step is accessible from the editor's "Next Steps" sidebar, providing a clear path from manuscript to finished audiobook.
 
 ## External Dependencies
 
