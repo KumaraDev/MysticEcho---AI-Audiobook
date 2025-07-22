@@ -87,7 +87,7 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <textarea id="editor-content" style="height: 600px;">{{ project.content or '' }}</textarea>
+                    <textarea id="editor-content" class="form-control border-0" style="height: 600px; resize: vertical; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6;" placeholder="Start writing your audiobook here...">{{ project.content or '' }}</textarea>
                 </div>
             </div>
         </div>
@@ -104,7 +104,7 @@
                 </div>
                 <div class="card-body" id="ai-suggestions-panel">
                     <div class="text-center text-muted py-4">
-                        <i data-feather="lightbulb" style="width: 48px; height: 48px;" class="mb-3"></i>
+                        <i data-feather="zap" style="width: 48px; height: 48px;" class="mb-3"></i>
                         <p class="mb-0">Select text and click an AI button to get suggestions</p>
                     </div>
                 </div>
@@ -188,25 +188,19 @@
     let autoSaveTimer;
     let currentSuggestion = null;
     
-    // Initialize TinyMCE
-    tinymce.init({
-        selector: '#editor-content',
-        height: 600,
-        menubar: false,
-        plugins: 'wordcount autoresize link lists table code',
-        toolbar: 'undo redo | bold italic underline | bullist numlist | link | table | code',
-        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.6; }',
-        setup: function(editor) {
-            editor.on('input', function() {
-                updateWordCount();
-                scheduleAutoSave();
-            });
-            
-            editor.on('init', function() {
-                updateWordCount();
-            });
-        }
+    // Initialize simple text editor
+    const editorTextarea = document.getElementById('editor-content');
+    
+    // Set up event listeners for the textarea
+    editorTextarea.addEventListener('input', function() {
+        updateWordCount();
+        scheduleAutoSave();
     });
+    
+    // Initial word count
+    updateWordCount();
+    
+    console.log('Mystic Editor initialized for project:', projectId);
     
     // PDF Upload Handler
     document.getElementById('pdf-upload').addEventListener('change', function(e) {
@@ -217,7 +211,7 @@
     });
     
     function updateWordCount() {
-        const content = tinymce.get('editor-content').getContent({format: 'text'});
+        const content = editorTextarea.value;
         const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
         document.getElementById('word-count').textContent = `${wordCount} words`;
         currentContent = content;
@@ -235,7 +229,7 @@
     }
     
     function saveProject(autoSave = false) {
-        const content = tinymce.get('editor-content').getContent();
+        const content = editorTextarea.value;
         const saveBtn = document.getElementById('save-btn');
         
         if (!autoSave) {
@@ -281,7 +275,7 @@
     }
     
     function getAISuggestions(type) {
-        const selectedText = tinymce.get('editor-content').selection.getContent({format: 'text'});
+        const selectedText = getSelectedText();
         
         if (!selectedText.trim()) {
             showNotification('Please select some text first', 'warning');
@@ -363,12 +357,18 @@
         document.getElementById('ai-modal-content').innerHTML = content;
     }
     
+    function getSelectedText() {
+        const textarea = editorTextarea;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        return textarea.value.substring(start, end);
+    }
+    
     function applySuggestion() {
         if (currentSuggestion) {
-            const editor = tinymce.get('editor-content');
-            const content = editor.getContent();
+            const content = editorTextarea.value;
             const newContent = content.replace(currentSuggestion.original, currentSuggestion.improved);
-            editor.setContent(newContent);
+            editorTextarea.value = newContent;
             
             const modal = bootstrap.Modal.getInstance(document.getElementById('aiSuggestionsModal'));
             modal.hide();
