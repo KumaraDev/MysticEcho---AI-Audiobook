@@ -110,6 +110,61 @@
                 </div>
             </div>
             
+            <!-- Chapter Organization Panel -->
+            <div class="card border-0 mb-3">
+                <div class="card-header bg-transparent border-0 pb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i data-feather="layers" class="me-2"></i>
+                            Chapters ({{ chapters|length }})
+                        </h6>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary btn-sm" onclick="quickCreateChapter()">
+                                <i data-feather="plus" class="me-1"></i>Add
+                            </button>
+                            <a href="{{ url_for('editor.manage_chapters', project_id=project.id) }}" class="btn btn-outline-secondary btn-sm">
+                                <i data-feather="settings" class="me-1"></i>Manage
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if chapters %}
+                        <div class="list-group list-group-flush" id="chapters-quick-list">
+                            {% for chapter in chapters[:5] %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold small">{{ chapter.title }}</div>
+                                    <div class="text-muted small">
+                                        {{ (chapter.content.split()|length) if chapter.content else 0 }} words
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary" onclick="editChapterQuick({{ chapter.id }})">
+                                    <i data-feather="edit-3"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                            {% if chapters|length > 5 %}
+                            <div class="list-group-item px-0 py-2 text-center">
+                                <a href="{{ url_for('editor.manage_chapters', project_id=project.id) }}" class="text-muted small text-decoration-none">
+                                    View all {{ chapters|length }} chapters →
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i data-feather="book-open" class="mb-2"></i>
+                            <p class="mb-0 small">No chapters yet</p>
+                            <button class="btn btn-sm btn-outline-primary mt-2" onclick="quickCreateChapter()">
+                                <i data-feather="plus" class="me-1"></i>
+                                Create First Chapter
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Next Steps Panel -->
             <div class="card border-0 mb-3">
                 <div class="card-header bg-transparent border-0 pb-2">
@@ -221,6 +276,42 @@
         </div>
     </div>
 </div>
+
+<!-- Quick Chapter Editor Modal -->
+<div class="modal fade" id="quickChapterModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i data-feather="edit-3" class="me-2"></i>
+                    <span id="quick-modal-title">Edit Chapter</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quick-chapter-form">
+                    <div class="mb-3">
+                        <label for="quick-chapter-title" class="form-label">Chapter Title</label>
+                        <input type="text" class="form-control" id="quick-chapter-title" placeholder="Enter chapter title..." required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quick-chapter-content" class="form-label">Content</label>
+                        <textarea id="quick-chapter-content" class="form-control" rows="20" 
+                                  style="font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6;"
+                                  placeholder="Write your chapter content here..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveQuickChapter()">
+                    <i data-feather="save" class="me-1"></i>
+                    Save Chapter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -249,5 +340,87 @@
             }
         }
     });
+    
+    // Chapter Management Functions
+    function quickCreateChapter() {
+        const title = prompt('Enter chapter title:');
+        if (title && title.trim()) {
+            fetch(`/editor/project/${projectId}/chapter/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title: title.trim() })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Refresh to show new chapter
+                } else {
+                    alert(data.error || 'Failed to create chapter');
+                }
+            })
+            .catch(error => {
+                console.error('Error creating chapter:', error);
+                alert('Failed to create chapter');
+            });
+        }
+    }
+    
+    function editChapterQuick(chapterId) {
+        currentChapterId = chapterId;
+        document.getElementById('quick-modal-title').textContent = 'Edit Chapter';
+        
+        // Fetch chapter data
+        fetch(`/editor/project/${projectId}/chapter/${chapterId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('quick-chapter-title').value = data.title;
+                document.getElementById('quick-chapter-content').value = data.content;
+                
+                const modal = new bootstrap.Modal(document.getElementById('quickChapterModal'));
+                modal.show();
+            })
+            .catch(error => {
+                console.error('Error loading chapter:', error);
+                alert('Failed to load chapter content');
+            });
+    }
+    
+    function saveQuickChapter() {
+        const title = document.getElementById('quick-chapter-title').value.trim();
+        const content = document.getElementById('quick-chapter-content').value;
+        
+        if (!title) {
+            alert('Please enter a chapter title');
+            return;
+        }
+        
+        const data = { title, content };
+        
+        fetch(`/editor/project/${projectId}/chapter/${currentChapterId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('quickChapterModal')).hide();
+                location.reload(); // Refresh to show updated chapters
+            } else {
+                alert(data.error || 'Failed to save chapter');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving chapter:', error);
+            alert('Failed to save chapter');
+        });
+    }
+    
+    // Global variable to track current chapter being edited
+    let currentChapterId = null;
 </script>
 {% endblock %}

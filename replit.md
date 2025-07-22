@@ -31,6 +31,7 @@ The application follows a modular Flask architecture with clear separation of co
 - **User**: Core user accounts with relationships to projects
 - **Project**: Main entity storing audiobook manuscripts with metadata
 - **ProjectVersion**: Version control for tracking content changes
+- **Chapter**: Individual manuscript chapters with title, content, and ordering
 - Uses SQLAlchemy with declarative base for ORM operations
 
 ### Route Blueprints
@@ -67,15 +68,21 @@ The application follows a modular Flask architecture with clear separation of co
 
 ## Audiobook Creation Workflow
 
-The platform now includes a complete audiobook creation workflow that guides users through:
+The platform now includes a complete audiobook creation workflow with chapter-based organization:
 
-1. **✓ Write & Edit**: Complete manuscript with AI assistance and auto-save
-2. **Generate Audio**: Convert text to professional speech using OpenAI TTS
-3. **Organize Chapters**: Automatic chapter detection and management
-4. **Preview & Review**: Listen to generated audio content
-5. **Export & Download**: Get final audiobook in MP3 and other formats
+1. **✓ Write & Edit + Organize Chapters**: Complete manuscript with AI assistance, auto-save, and chapter management system
+2. **Preview & Review**: Listen to generated audio content organized by chapters
+3. **Generate Audio**: Convert text to professional speech using OpenAI TTS
+4. **Export & Download**: Get final audiobook in MP3 and other formats
 
-Each step is accessible from the editor's "Next Steps" sidebar, providing a clear path from manuscript to finished audiobook.
+### Chapter Management System
+- **Create Chapters**: Add new chapters with custom titles from editor sidebar or dedicated management page
+- **Edit Individual Chapters**: Click-to-edit chapter content in full-screen modal or dedicated interface
+- **Drag & Drop Reordering**: Visual chapter organization with automatic index updating
+- **Word Count Tracking**: Real-time statistics for individual chapters and total manuscript
+- **Quick Access**: Chapter overview panel in editor sidebar for easy navigation
+
+Each step is accessible from the editor's "Next Steps" sidebar, with enhanced chapter organization providing a clear structure from manuscript to finished audiobook.
 
 ## External Dependencies
 

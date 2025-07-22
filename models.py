@@ -56,3 +56,19 @@ class ProjectVersion(db.Model):
     
     def __repr__(self):
         return f'<ProjectVersion {self.project_id}:{self.version_number}>'
+
+class Chapter(db.Model):
+    __tablename__ = 'chapters'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, default='')
+    order_index = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    project = db.relationship('Project', backref=db.backref('chapters', order_by='Chapter.order_index', lazy=True))
+    
+    def __repr__(self):
+        return f'<Chapter {self.title}>'

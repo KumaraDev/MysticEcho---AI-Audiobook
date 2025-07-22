@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
-from models import User, Project, ProjectVersion
+from models import User, Project, ProjectVersion, Chapter
 from app import db
 from routes.auth import login_required
 from services.ai_service import get_content_suggestions, improve_text
@@ -23,7 +23,25 @@ def edit_project(project_id):
     # Get recent versions for history
     recent_versions = ProjectVersion.query.filter_by(project_id=project_id).order_by(ProjectVersion.created_at.desc()).limit(5).all()
     
-    return render_template('editor.html', project=project, versions=recent_versions)
+    # Get chapters for project
+    chapters = Chapter.query.filter_by(project_id=project_id).order_by(Chapter.order_index).all()
+    
+    return render_template('editor.html', project=project, versions=recent_versions, chapters=chapters)
+
+@editor_bp.route('/project/<int:project_id>/chapters')
+@login_required
+def manage_chapters(project_id):
+    """Chapter management view"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        flash('Project not found.', 'error')
+        return redirect(url_for('dashboard.index'))
+    
+    chapters = Chapter.query.filter_by(project_id=project_id).order_by(Chapter.order_index).all()
+    
+    return render_template('editor/chapters.html', project=project, chapters=chapters)
 
 @editor_bp.route('/save_project/<int:project_id>', methods=['POST'])
 @login_required
@@ -74,6 +92,156 @@ def save_project(project_id):
         db.session.rollback()
         logging.error(f"Save project error: {e}")
         return jsonify({'error': 'Failed to save project'}), 500
+
+# Chapter Management Routes
+@editor_bp.route('/project/<int:project_id>/chapter/create', methods=['POST'])
+@login_required
+def create_chapter(project_id):
+    """Create a new chapter"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    data = request.get_json()
+    title = data.get('title', 'Untitled Chapter')
+    
+    try:
+        # Get the next order index
+        max_order = db.session.query(db.func.max(Chapter.order_index)).filter_by(project_id=project_id).scalar() or 0
+        
+        chapter = Chapter(
+            project_id=project_id,
+            title=title,
+            content='',
+            order_index=max_order + 1
+        )
+        
+        db.session.add(chapter)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'chapter': {
+                'id': chapter.id,
+                'title': chapter.title,
+                'content': chapter.content,
+                'order_index': chapter.order_index
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Create chapter error: {e}")
+        return jsonify({'error': 'Failed to create chapter'}), 500
+
+@editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>', methods=['GET'])
+@login_required
+def get_chapter(project_id, chapter_id):
+    """Get chapter content for editing"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    chapter = Chapter.query.filter_by(id=chapter_id, project_id=project_id).first()
+    if not chapter:
+        return jsonify({'error': 'Chapter not found'}), 404
+    
+    return jsonify({
+        'id': chapter.id,
+        'title': chapter.title,
+        'content': chapter.content,
+        'order_index': chapter.order_index
+    })
+
+@editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>', methods=['PUT'])
+@login_required
+def update_chapter(project_id, chapter_id):
+    """Update chapter content and title"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    chapter = Chapter.query.filter_by(id=chapter_id, project_id=project_id).first()
+    if not chapter:
+        return jsonify({'error': 'Chapter not found'}), 404
+    
+    data = request.get_json()
+    
+    try:
+        chapter.title = data.get('title', chapter.title)
+        chapter.content = data.get('content', chapter.content)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Chapter updated successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Update chapter error: {e}")
+        return jsonify({'error': 'Failed to update chapter'}), 500
+
+@editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>', methods=['DELETE'])
+@login_required
+def delete_chapter(project_id, chapter_id):
+    """Delete a chapter"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    chapter = Chapter.query.filter_by(id=chapter_id, project_id=project_id).first()
+    if not chapter:
+        return jsonify({'error': 'Chapter not found'}), 404
+    
+    try:
+        db.session.delete(chapter)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Chapter deleted successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Delete chapter error: {e}")
+        return jsonify({'error': 'Failed to delete chapter'}), 500
+
+@editor_bp.route('/project/<int:project_id>/chapters/reorder', methods=['POST'])
+@login_required
+def reorder_chapters(project_id):
+    """Reorder chapters via drag and drop"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    data = request.get_json()
+    chapter_order = data.get('chapter_order', [])
+    
+    try:
+        for index, chapter_id in enumerate(chapter_order):
+            chapter = Chapter.query.filter_by(id=chapter_id, project_id=project_id).first()
+            if chapter:
+                chapter.order_index = index
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Chapters reordered successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Reorder chapters error: {e}")
+        return jsonify({'error': 'Failed to reorder chapters'}), 500
 
 @editor_bp.route('/ai_suggestions/<int:project_id>', methods=['POST'])
 @login_required
