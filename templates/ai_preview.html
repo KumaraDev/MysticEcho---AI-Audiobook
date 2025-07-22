@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}AI Suggestions - {{ project.title }} - Mystic Echo{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="d-flex align-items-center mb-4">
+                <a href="{{ url_for('editor.edit_project', project_id=project.id) }}" class="btn btn-outline-secondary me-3">
+                    <i data-feather="arrow-left" class="me-1"></i>
+                    Back to Editor
+                </a>
+                <div>
+                    <h3 class="mb-1">AI Content Suggestions</h3>
+                    <p class="text-muted mb-0">Review and apply AI-generated improvements to your content</p>
+                </div>
+            </div>
+            
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pb-2">
+                    <h5 class="mb-0">
+                        <i data-feather="cpu" class="me-2 text-info"></i>
+                        Enhanced Content Preview
+                    </h5>
+                </div>
+                
+                {% if suggestions %}
+                <div class="card-body">
+                    <!-- Original Text Section -->
+                    {% if suggestions.get('original_text') %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">Original Text:</h6>
+                        <div class="bg-light p-3 rounded border">
+                            <p class="mb-0">{{ suggestions.original_text }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Improved Text Section -->
+                    {% if suggestions.get('improved_text') %}
+                    <div class="mb-4">
+                        <h6 class="text-info mb-2">AI-Enhanced Version:</h6>
+                        <div class="bg-info bg-opacity-10 p-3 rounded border border-info">
+                            <p class="mb-0">{{ suggestions.improved_text }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Expanded Text Section -->
+                    {% if suggestions.get('expanded_text') %}
+                    <div class="mb-4">
+                        <h6 class="text-success mb-2">Expanded Version:</h6>
+                        <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
+                            <p class="mb-0">{{ suggestions.expanded_text }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Summary Section -->
+                    {% if suggestions.get('summary') %}
+                    <div class="mb-4">
+                        <h6 class="text-warning mb-2">Summary:</h6>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded border border-warning">
+                            <p class="mb-0">{{ suggestions.summary }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Explanation Section -->
+                    {% if suggestions.get('explanation') %}
+                    <div class="mb-4">
+                        <h6 class="mb-2">
+                            <i data-feather="info" class="me-1"></i>
+                            What Changed:
+                        </h6>
+                        <div class="alert alert-light border">
+                            <p class="mb-0">{{ suggestions.explanation }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Key Improvements Section -->
+                    {% if suggestions.get('key_improvements') %}
+                    <div class="mb-4">
+                        <h6 class="mb-2">
+                            <i data-feather="check-circle" class="me-1"></i>
+                            Key Improvements:
+                        </h6>
+                        <div class="alert alert-success border">
+                            {% if suggestions.key_improvements is string %}
+                                <p class="mb-0">{{ suggestions.key_improvements }}</p>
+                            {% else %}
+                                <ul class="mb-0">
+                                    {% for improvement in suggestions.key_improvements %}
+                                    <li>{{ improvement }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Narration Notes Section -->
+                    {% if suggestions.get('narration_notes') %}
+                    <div class="mb-4">
+                        <h6 class="mb-2">
+                            <i data-feather="mic" class="me-1"></i>
+                            Narration Notes:
+                        </h6>
+                        <div class="alert alert-info border">
+                            <p class="mb-0">{{ suggestions.narration_notes }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Key Points Section -->
+                    {% if suggestions.get('key_points') %}
+                    <div class="mb-4">
+                        <h6 class="mb-2">
+                            <i data-feather="list" class="me-1"></i>
+                            Key Points:
+                        </h6>
+                        <div class="alert alert-secondary border">
+                            {% if suggestions.key_points is string %}
+                                <p class="mb-0">{{ suggestions.key_points }}</p>
+                            {% else %}
+                                <ul class="mb-0">
+                                    {% for point in suggestions.key_points %}
+                                    <li>{{ point }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Additions Section -->
+                    {% if suggestions.get('additions') %}
+                    <div class="mb-4">
+                        <h6 class="mb-2">
+                            <i data-feather="plus-circle" class="me-1"></i>
+                            What Was Added:
+                        </h6>
+                        <div class="alert alert-light border">
+                            <p class="mb-0">{{ suggestions.additions }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-info" onclick="copyToClipboard()">
+                                <i data-feather="copy" class="me-1"></i>
+                                Copy Enhanced Text
+                            </button>
+                            <button class="btn btn-outline-success" onclick="acceptSuggestions()">
+                                <i data-feather="check" class="me-1"></i>
+                                Apply Changes
+                            </button>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary" onclick="regenerateSuggestions()">
+                                <i data-feather="refresh-cw" class="me-1"></i>
+                                Regenerate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="card-body text-center py-5">
+                    <i data-feather="cpu" style="width: 64px; height: 64px;" class="text-muted mb-3"></i>
+                    <h5 class="text-muted mb-3">No AI suggestions available</h5>
+                    <p class="text-muted mb-4">
+                        Return to the editor and select text to generate AI-powered content suggestions.
+                    </p>
+                    <a href="{{ url_for('editor.edit_project', project_id=project.id) }}" class="btn btn-info">
+                        <i data-feather="arrow-left" class="me-2"></i>
+                        Back to Editor
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Additional Information Card -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body">
+                    <h6 class="mb-3">
+                        <i data-feather="lightbulb" class="me-2 text-warning"></i>
+                        Tips for Better AI Suggestions
+                    </h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i data-feather="check" class="me-2 text-success"></i>
+                                    Select complete sentences or paragraphs
+                                </li>
+                                <li class="mb-2">
+                                    <i data-feather="check" class="me-2 text-success"></i>
+                                    Provide context around the selected text
+                                </li>
+                                <li class="mb-2">
+                                    <i data-feather="check" class="me-2 text-success"></i>
+                                    Focus on narrative sections for best results
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i data-feather="check" class="me-2 text-success"></i>
+                                    Use "Improve" for better flow and readability
+                                </li>
+                                <li class="mb-2">
+                                    <i data-feather="check" class="me-2 text-success"></i>
+                                    Use "Expand" to add more detail
+                                </li>
+                                <li class="mb-2">
+                                    <i data-feather="check" class="me-2 text-success"></i>
+                                    Use "Summarize" to condense long sections
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i data-feather="check-circle" class="me-2 text-success"></i>
+                    Success
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="success-message">Changes have been applied successfully!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function copyToClipboard() {
+        // Find the enhanced text (prioritize improved_text, then expanded_text, then summary)
+        let textToCopy = '';
+        const improvedTextElement = document.querySelector('.bg-info.bg-opacity-10 p');
+        const expandedTextElement = document.querySelector('.bg-success.bg-opacity-10 p');
+        const summaryTextElement = document.querySelector('.bg-warning.bg-opacity-10 p');
+        
+        if (improvedTextElement) {
+            textToCopy = improvedTextElement.textContent;
+        } else if (expandedTextElement) {
+            textToCopy = expandedTextElement.textContent;
+        } else if (summaryTextElement) {
+            textToCopy = summaryTextElement.textContent;
+        }
+        
+        if (textToCopy) {
+            navigator.clipboard.writeText(textToCopy).then(function() {
+                showNotification('Text copied to clipboard!', 'success');
+            }).catch(function(err) {
+                console.error('Failed to copy text: ', err);
+                showNotification('Failed to copy text', 'error');
+            });
+        } else {
+            showNotification('No enhanced text found to copy', 'warning');
+        }
+    }
+    
+    function acceptSuggestions() {
+        // This would normally integrate with the editor to apply changes
+        // For now, we'll show a success message
+        document.getElementById('success-message').textContent = 'AI suggestions have been noted. Return to the editor to apply them manually.';
+        const modal = new bootstrap.Modal(document.getElementById('successModal'));
+        modal.show();
+    }
+    
+    function regenerateSuggestions() {
+        showNotification('Return to the editor to generate new suggestions', 'info');
+    }
+    
+    function showNotification(message, type) {
+        const alertClass = type === 'error' ? 'alert-danger' : type === 'success' ? 'alert-success' : type === 'warning' ? 'alert-warning' : 'alert-info';
+        const iconName = type === 'error' ? 'alert-circle' : type === 'success' ? 'check-circle' : type === 'warning' ? 'alert-triangle' : 'info';
+        
+        const alert = document.createElement('div');
+        alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            <i data-feather="${iconName}" class="me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alert);
+        feather.replace();
+        
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+</script>
+{% endblock %}

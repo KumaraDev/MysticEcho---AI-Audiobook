@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to Mystic Echo - Audiobook Creation Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Hero Section -->
+    <div class="row min-vh-100 align-items-center">
+        <div class="col-lg-6 offset-lg-1">
+            <div class="hero-content">
+                <h1 class="display-3 fw-bold mb-4">
+                    Create Amazing
+                    <span class="text-info">Audiobooks</span>
+                    with AI
+                </h1>
+                <p class="lead mb-4 text-muted">
+                    Transform your manuscripts into professional audiobooks with our AI-powered editing platform. 
+                    Upload PDFs, enhance your content, and manage your audiobook projects all in one place.
+                </p>
+                
+                <div class="d-flex flex-column flex-sm-row gap-3 mb-5">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-info btn-lg">
+                        <i data-feather="play-circle" class="me-2"></i>
+                        Start Creating
+                    </a>
+                    <a href="#features" class="btn btn-outline-secondary btn-lg">
+                        <i data-feather="info" class="me-2"></i>
+                        Learn More
+                    </a>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h3 class="text-info mb-1">AI-Powered</h3>
+                            <small class="text-muted">Content Enhancement</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h3 class="text-info mb-1">Cloud Storage</h3>
+                            <small class="text-muted">Secure & Reliable</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <h3 class="text-info mb-1">PDF Import</h3>
+                            <small class="text-muted">Easy Text Extraction</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="hero-visual p-4">
+                <div class="card h-100 border-0 shadow-lg">
+                    <div class="card-body d-flex flex-column justify-content-center text-center">
+                        <div class="mb-4">
+                            <i data-feather="headphones" style="width: 80px; height: 80px;" class="text-info"></i>
+                        </div>
+                        <h4 class="mb-3">Professional Audiobook Creation</h4>
+                        <p class="text-muted mb-4">
+                            From manuscript to finished audiobook with AI assistance every step of the way.
+                        </p>
+                        <div class="progress mb-3" style="height: 8px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 85%"></div>
+                        </div>
+                        <small class="text-muted">Join thousands of creators worldwide</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Features Section -->
+    <section id="features" class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center mb-5">
+                    <h2 class="display-5 fw-bold mb-3">Everything You Need</h2>
+                    <p class="lead text-muted">Powerful features to streamline your audiobook creation process</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card card h-100 border-0">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i data-feather="edit-3" style="width: 48px; height: 48px;" class="text-info"></i>
+                            </div>
+                            <h5 class="card-title">Rich Text Editor</h5>
+                            <p class="card-text text-muted">
+                                Professional text editor with auto-save, version control, and formatting optimized for audiobook narration.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card card h-100 border-0">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i data-feather="cpu" style="width: 48px; height: 48px;" class="text-info"></i>
+                            </div>
+                            <h5 class="card-title">AI Content Enhancement</h5>
+                            <p class="card-text text-muted">
+                                Get intelligent suggestions to improve readability, pacing, and engagement for audio delivery.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card card h-100 border-0">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i data-feather="file-text" style="width: 48px; height: 48px;" class="text-info"></i>
+                            </div>
+                            <h5 class="card-title">PDF Import</h5>
+                            <p class="card-text text-muted">
+                                Import existing manuscripts from PDF files with intelligent text extraction and formatting.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card card h-100 border-0">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i data-feather="cloud" style="width: 48px; height: 48px;" class="text-info"></i>
+                            </div>
+                            <h5 class="card-title">Cloud Storage</h5>
+                            <p class="card-text text-muted">
+                                Secure cloud backup ensures your work is always safe and accessible from anywhere.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card card h-100 border-0">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i data-feather="layers" style="width: 48px; height: 48px;" class="text-info"></i>
+                            </div>
+                            <h5 class="card-title">Project Management</h5>
+                            <p class="card-text text-muted">
+                                Organize multiple audiobook projects with status tracking and progress monitoring.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card card h-100 border-0">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-3">
+                                <i data-feather="shield-check" style="width: 48px; height: 48px;" class="text-info"></i>
+                            </div>
+                            <h5 class="card-title">Secure & Private</h5>
+                            <p class="card-text text-muted">
+                                Your manuscripts are protected with enterprise-grade security and privacy controls.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- CTA Section -->
+    <section class="py-5 bg-dark">
+        <div class="container text-center">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <h2 class="display-6 fw-bold mb-3">Ready to Create Your Audiobook?</h2>
+                    <p class="lead text-muted mb-4">
+                        Join the community of creators using AI to enhance their audiobook production process.
+                    </p>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-info btn-lg">
+                        <i data-feather="arrow-right" class="me-2"></i>
+                        Get Started Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

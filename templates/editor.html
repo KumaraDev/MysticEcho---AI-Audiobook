@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }} - Editor - Mystic Echo{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <!-- Editor Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary me-3">
+                        <i data-feather="arrow-left" class="me-1"></i>
+                        Back
+                    </a>
+                    <div>
+                        <h4 class="mb-1">{{ project.title }}</h4>
+                        <div class="d-flex align-items-center">
+                            <span class="badge badge-status-{{ project.status }} me-2">{{ project.status.replace('_', ' ').title() }}</span>
+                            <span class="text-muted small" id="word-count">0 words</span>
+                            <span class="text-muted small ms-2" id="auto-save-status"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Status Update -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i data-feather="settings" class="me-1"></i>
+                            Status
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="updateStatus('draft')">
+                                <i data-feather="edit-3" class="me-2"></i>Draft
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="updateStatus('in_progress')">
+                                <i data-feather="play-circle" class="me-2"></i>In Progress
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="updateStatus('completed')">
+                                <i data-feather="check-circle" class="me-2"></i>Completed
+                            </a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- PDF Upload -->
+                    <button class="btn btn-outline-info" onclick="document.getElementById('pdf-upload').click()">
+                        <i data-feather="upload" class="me-1"></i>
+                        Import PDF
+                    </button>
+                    <input type="file" id="pdf-upload" accept=".pdf" style="display: none;">
+                    
+                    <!-- Save Button -->
+                    <button class="btn btn-success" id="save-btn" onclick="saveProject()">
+                        <i data-feather="save" class="me-1"></i>
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Main Editor -->
+        <div class="col-lg-8">
+            <div class="card border-0 h-100">
+                <div class="card-header bg-transparent border-0 pb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i data-feather="edit-3" class="me-2"></i>
+                            Manuscript Editor
+                        </h6>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('improve')" id="ai-improve-btn">
+                                <i data-feather="cpu" class="me-1"></i>
+                                Improve
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('expand')" id="ai-expand-btn">
+                                <i data-feather="plus-square" class="me-1"></i>
+                                Expand
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('summarize')" id="ai-summarize-btn">
+                                <i data-feather="minus-square" class="me-1"></i>
+                                Summarize
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <textarea id="editor-content" style="height: 600px;">{{ project.content or '' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- AI Suggestions Panel -->
+            <div class="card border-0 mb-3">
+                <div class="card-header bg-transparent border-0 pb-2">
+                    <h6 class="mb-0">
+                        <i data-feather="cpu" class="me-2"></i>
+                        AI Assistant
+                    </h6>
+                </div>
+                <div class="card-body" id="ai-suggestions-panel">
+                    <div class="text-center text-muted py-4">
+                        <i data-feather="lightbulb" style="width: 48px; height: 48px;" class="mb-3"></i>
+                        <p class="mb-0">Select text and click an AI button to get suggestions</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Version History -->
+            <div class="card border-0">
+                <div class="card-header bg-transparent border-0 pb-2">
+                    <h6 class="mb-0">
+                        <i data-feather="clock" class="me-2"></i>
+                        Recent Versions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if versions %}
+                        <div class="list-group list-group-flush">
+                            {% for version in versions %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <small class="fw-semibold">Version {{ version.version_number }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ version.created_at.strftime('%b %d, %Y at %I:%M %p') }}</small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="loadVersion({{ version.id }})">
+                                    Load
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i data-feather="file-text" class="mb-2"></i>
+                            <p class="mb-0 small">No versions saved yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Suggestions Modal -->
+<div class="modal fade" id="aiSuggestionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i data-feather="cpu" class="me-2"></i>
+                    AI Suggestions
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="ai-modal-content">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-info" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Generating AI suggestions...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info" id="apply-suggestion-btn" style="display: none;" onclick="applySuggestion()">
+                    Apply Suggestion
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+<script>
+    // Initialize editor with project data
+    const projectId = {{ project.id }};
+    let currentContent = document.getElementById('editor-content').value;
+    let lastSavedContent = currentContent;
+    let autoSaveTimer;
+    let currentSuggestion = null;
+    
+    // Initialize TinyMCE
+    tinymce.init({
+        selector: '#editor-content',
+        height: 600,
+        menubar: false,
+        plugins: 'wordcount autoresize link lists table code',
+        toolbar: 'undo redo | bold italic underline | bullist numlist | link | table | code',
+        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.6; }',
+        setup: function(editor) {
+            editor.on('input', function() {
+                updateWordCount();
+                scheduleAutoSave();
+            });
+            
+            editor.on('init', function() {
+                updateWordCount();
+            });
+        }
+    });
+    
+    // PDF Upload Handler
+    document.getElementById('pdf-upload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            uploadPDF(file);
+        }
+    });
+    
+    function updateWordCount() {
+        const content = tinymce.get('editor-content').getContent({format: 'text'});
+        const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+        document.getElementById('word-count').textContent = `${wordCount} words`;
+        currentContent = content;
+    }
+    
+    function scheduleAutoSave() {
+        clearTimeout(autoSaveTimer);
+        document.getElementById('auto-save-status').textContent = 'Unsaved changes';
+        
+        autoSaveTimer = setTimeout(() => {
+            if (currentContent !== lastSavedContent) {
+                saveProject(true);
+            }
+        }, 3000);
+    }
+    
+    function saveProject(autoSave = false) {
+        const content = tinymce.get('editor-content').getContent();
+        const saveBtn = document.getElementById('save-btn');
+        
+        if (!autoSave) {
+            saveBtn.innerHTML = '<i data-feather="loader" class="me-1 spin"></i>Saving...';
+            saveBtn.disabled = true;
+        }
+        
+        fetch(`/editor/save_project/${projectId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                content: content,
+                auto_save: autoSave
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                lastSavedContent = content;
+                const status = autoSave ? 'Auto-saved' : 'Saved';
+                document.getElementById('auto-save-status').textContent = status;
+                
+                if (!autoSave) {
+                    showNotification('Project saved successfully!', 'success');
+                }
+            } else {
+                showNotification(data.error || 'Failed to save project', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Save error:', error);
+            showNotification('Error saving project', 'error');
+        })
+        .finally(() => {
+            if (!autoSave) {
+                saveBtn.innerHTML = '<i data-feather="save" class="me-1"></i>Save';
+                saveBtn.disabled = false;
+                feather.replace();
+            }
+        });
+    }
+    
+    function getAISuggestions(type) {
+        const selectedText = tinymce.get('editor-content').selection.getContent({format: 'text'});
+        
+        if (!selectedText.trim()) {
+            showNotification('Please select some text first', 'warning');
+            return;
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('aiSuggestionsModal'));
+        modal.show();
+        
+        fetch(`/editor/ai_suggestions/${projectId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: selectedText,
+                type: type
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayAISuggestions(data.suggestions, selectedText);
+            } else {
+                document.getElementById('ai-modal-content').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i data-feather="alert-circle" class="me-2"></i>
+                        ${data.error}
+                    </div>
+                `;
+                feather.replace();
+            }
+        })
+        .catch(error => {
+            console.error('AI suggestions error:', error);
+            document.getElementById('ai-modal-content').innerHTML = `
+                <div class="alert alert-danger">
+                    <i data-feather="alert-circle" class="me-2"></i>
+                    Failed to get AI suggestions
+                </div>
+            `;
+            feather.replace();
+        });
+    }
+    
+    function displayAISuggestions(suggestions, originalText) {
+        let content = `
+            <div class="mb-3">
+                <h6>Original Text:</h6>
+                <div class="bg-light p-3 rounded">${originalText}</div>
+            </div>
+        `;
+        
+        if (suggestions.improved_text) {
+            content += `
+                <div class="mb-3">
+                    <h6>Improved Version:</h6>
+                    <div class="bg-info bg-opacity-10 p-3 rounded" id="suggestion-text">${suggestions.improved_text}</div>
+                </div>
+            `;
+            
+            if (suggestions.explanation) {
+                content += `
+                    <div class="mb-3">
+                        <h6>Explanation:</h6>
+                        <p class="text-muted">${suggestions.explanation}</p>
+                    </div>
+                `;
+            }
+            
+            currentSuggestion = {
+                original: originalText,
+                improved: suggestions.improved_text
+            };
+            
+            document.getElementById('apply-suggestion-btn').style.display = 'inline-block';
+        }
+        
+        document.getElementById('ai-modal-content').innerHTML = content;
+    }
+    
+    function applySuggestion() {
+        if (currentSuggestion) {
+            const editor = tinymce.get('editor-content');
+            const content = editor.getContent();
+            const newContent = content.replace(currentSuggestion.original, currentSuggestion.improved);
+            editor.setContent(newContent);
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('aiSuggestionsModal'));
+            modal.hide();
+            
+            showNotification('Suggestion applied successfully!', 'success');
+            updateWordCount();
+            scheduleAutoSave();
+        }
+    }
+    
+    function updateStatus(newStatus) {
+        fetch(`/editor/update_status/${projectId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                status: newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                showNotification(data.error || 'Failed to update status', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Status update error:', error);
+            showNotification('Error updating status', 'error');
+        });
+    }
+    
+    function uploadPDF(file) {
+        const formData = new FormData();
+        formData.append('pdf_file', file);
+        
+        showNotification('Uploading and processing PDF...', 'info');
+        
+        fetch(`/editor/upload_pdf/${projectId}`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                // Reload the page to show the imported content
+                location.reload();
+            } else {
+                showNotification(data.error || 'Failed to process PDF', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('PDF upload error:', error);
+            showNotification('Error uploading PDF', 'error');
+        });
+    }
+    
+    function showNotification(message, type) {
+        const alertClass = type === 'error' ? 'alert-danger' : type === 'success' ? 'alert-success' : 'alert-info';
+        const iconName = type === 'error' ? 'alert-circle' : type === 'success' ? 'check-circle' : 'info';
+        
+        const alert = document.createElement('div');
+        alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            <i data-feather="${iconName}" class="me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alert);
+        feather.replace();
+        
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === 's') {
+                e.preventDefault();
+                saveProject();
+            }
+        }
+    });
+</script>
+{% endblock %}
