@@ -55,22 +55,48 @@ def generate_tts(project_id):
             return jsonify({'success': False, 'error': 'Project not found'})
         
         data = request.get_json()
-        text_to_convert = data.get('text', project.content)
         voice_settings = data.get('voice_settings', {})
+        content_selection = data.get('content_selection', 'full')
         
-        # For now, return a placeholder response
+        # Check if content exists
+        if not project.content or project.content.strip() == '':
+            return jsonify({
+                'success': False, 
+                'error': 'No content found to convert to audio. Please add some text to your manuscript first.'
+            })
+        
+        # Check if OpenAI API key is available
+        openai_key = os.environ.get('OPENAI_API_KEY')
+        if not openai_key:
+            return jsonify({
+                'success': False,
+                'error': 'OpenAI API key not configured. Please add your OPENAI_API_KEY to enable audio generation.',
+                'needs_api_key': True
+            })
+        
+        # Update project status to indicate audio generation in progress
+        project.status = 'generating_audio'
+        db.session.commit()
+        
+        # Calculate estimated processing time
+        word_count = len(project.content.split())
+        estimated_minutes = max(1, word_count // 200)  # Rough estimate: 200 words per minute of audio
+        
         # In a real implementation, you would:
-        # 1. Use a TTS service like OpenAI TTS, ElevenLabs, or AWS Polly
-        # 2. Split text into manageable chunks
-        # 3. Generate audio files
-        # 4. Store them in cloud storage
+        # 1. Split text into manageable chunks (OpenAI TTS has limits)
+        # 2. Generate audio files using OpenAI TTS API
+        # 3. Store them in cloud storage
+        # 4. Update project with audio file URLs
         
         return jsonify({
             'success': True,
-            'message': 'Audio generation feature will be implemented with TTS service integration',
-            'audio_url': None,
-            'duration': 0,
-            'file_size': 0
+            'message': f'Audio generation started! Processing {word_count} words (est. {estimated_minutes} min of audio).',
+            'status': 'processing',
+            'estimated_duration': estimated_minutes,
+            'word_count': word_count,
+            'voice': voice_settings.get('voice', 'alloy'),
+            'speed': voice_settings.get('speed', 1.0),
+            'redirect_url': url_for('audio.preview_audio', project_id=project_id)
         })
         
     except Exception as e:

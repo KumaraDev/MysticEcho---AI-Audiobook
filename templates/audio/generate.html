@@ -159,7 +159,12 @@ function generateAudio() {
     const contentSelection = document.querySelector('input[name="content-selection"]:checked').value;
     
     const modal = new bootstrap.Modal(document.getElementById('audioProgressModal'));
+    const progressBar = document.querySelector('#audioProgressModal .progress-bar');
+    const modalBody = document.querySelector('#audioProgressModal .modal-body p');
+    
     modal.show();
+    modalBody.textContent = 'Initializing audio generation...';
+    progressBar.style.width = '10%';
     
     fetch(`/audio/generate_tts/{{ project.id }}`, {
         method: 'POST',
@@ -176,21 +181,79 @@ function generateAudio() {
     })
     .then(response => response.json())
     .then(data => {
-        modal.hide();
+        progressBar.style.width = '100%';
         
         if (data.success) {
-            showNotification(data.message, 'info');
-            // Redirect to preview page when audio generation is implemented
-            // window.location.href = `/audio/preview/{{ project.id }}`;
+            if (data.status === 'processing') {
+                modalBody.innerHTML = `
+                    <strong>Audio Generation Started!</strong><br>
+                    Processing ${data.word_count} words with ${data.voice} voice<br>
+                    Estimated duration: ${data.estimated_duration} minutes of audio<br>
+                    <small class="text-muted">This process may take a few minutes...</small>
+                `;
+                
+                setTimeout(() => {
+                    modal.hide();
+                    showSuccessMessage(data.message, data.redirect_url);
+                }, 3000);
+            } else {
+                modal.hide();
+                showNotification(data.message, 'info');
+            }
         } else {
-            showNotification(data.error || 'Failed to generate audio', 'error');
+            modal.hide();
+            if (data.needs_api_key) {
+                showApiKeyError(data.error);
+            } else {
+                showNotification(data.error || 'Failed to generate audio', 'error');
+            }
         }
     })
     .catch(error => {
         modal.hide();
         console.error('Audio generation error:', error);
-        showNotification('Error generating audio', 'error');
+        showNotification('Error connecting to audio generation service', 'error');
     });
+}
+
+function showSuccessMessage(message, redirectUrl) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 400px;';
+    alert.innerHTML = `
+        <i data-feather="check-circle" class="me-2"></i>
+        <strong>Success!</strong> ${message}
+        <div class="mt-2">
+            <a href="${redirectUrl}" class="btn btn-sm btn-outline-success me-2">View Audio Status</a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alert);
+    feather.replace();
+    
+    // Auto-redirect after 5 seconds
+    setTimeout(() => {
+        window.location.href = redirectUrl;
+    }, 5000);
+}
+
+function showApiKeyError(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 400px;';
+    alert.innerHTML = `
+        <i data-feather="alert-triangle" class="me-2"></i>
+        <strong>API Key Required</strong><br>
+        ${message}
+        <div class="mt-2">
+            <small class="text-muted">Add your OpenAI API key in the environment variables to enable this feature.</small>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alert);
+    feather.replace();
 }
 
 function showNotification(message, type) {

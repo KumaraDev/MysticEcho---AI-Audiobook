@@ -1,0 +1,90 @@
+<?php
+
+return [
+
+    // Toggle notification tests individually via .env
+    'tests' => [
+
+        // === PERSONAL NOTIFICATIONS ===
+
+        // 🎉 Birthday message
+        'Happy Birthday Message' => env('RUN_HBD_NOTIFICATION_TEST', false),
+
+        // ☀️ Monthly Switch Message
+        'Monthly Switch Line Message' => env('RUN_MONTHLY_SWITCH_LINE_NOTIFICATION_TEST', false),
+
+        // 📅 Weekly encouragement message (Watch With Me)
+        'Weekly encouragement message from the master' => env('RUN_WM_WEEKLY_NOTIFICATION_TEST', false),
+
+        // NEED TO ADD THIS CHECK TO FILE
+        // 🎂 6-week cycle birthday prep message
+        'SWC' => env('RUN_SWC_NOTIFICATION_TEST', false),
+        
+        // NEED TO ADD THIS CHECK TO FILE
+        // 👋 Welcome message when user joins
+        'WELCOME' => env('RUN_WELCOME_NOTIFICATION_TEST', false),
+
+        // 📄 Prayer Sheet PDF generation
+        'Custom Prayer Sheet is Available' => env('RUN_PRAYER_SHEET_IS_AVAILABLE_NOTIFICATION_TEST', false),
+
+        // === PLANETARY NOTIFICATIONS ===
+
+        // ☀️ Sunshine Planet Monthly Message
+        'Sunshine Planet Monthly Message' => env('RUN_CSS_PLANET_MONTHLY_NOTIFICATION_TEST', false),
+
+        // 🌸 Spring Equinox
+        'Spring Equinox Message' => env('RUN_SPRING_EQ_NOTIFICATION_TEST', false),
+
+        // 🍁 Autumn Equinox
+        'Autumn Equinox Message' => env('RUN_AE_NOTIFICATION_TEST', false),
+
+        // ☀️ Summer Solstice (Solstice Day)
+        'Summer Solstice Message (Solstice Day)' => env('RUN_SS_NOTIFICATION_TEST', false),
+
+        // ☀️ Summer Solstice (6 Weeks Before)
+        'Summer Solstice Message (6 Weeks Before)' => env('RUN_SS_6WC_NOTIFICATION_TEST', false),
+
+        // ❄️ Winter Solstice (Solstice Day)
+        'Winter Solstice Message (Solstice Day)' => env('RUN_WS_NOTIFICATION_TEST', false),
+
+        // ❄️ Winter Solstice
+        'Winter Solstice Message (6 Weeks Before)' => env('RUN_WS_6WC_NOTIFICATION_TEST', false),
+
+        // 🌕 Full Moon
+        'Full Moon Astro Sign Planet Message' => env('RUN_FM_NOTIFICATION_TEST', false),
+
+        // NEED TO ADD THIS CHECK TO FILE
+        // 📆 End-of-year 6-week cycle message
+        'SWC_END' => env('RUN_SWC_END_NOTIFICATION_TEST', false),
+
+        // === SYSTEM NOTIFICATIONS ===
+
+        // NEED TO ADD THIS CHECK TO FILE
+        // 📧 Legacy 6-day email verification reminder
+        'VRF6' => env('RUN_VRF6_NOTIFICATION_TEST', false),
+
+        // NEED TO ADD THIS CHECK TO FILE
+        // ✅ NEW 6-day verification message (used by SendUserVrfsixDayMsgJob)
+        'USER_VRFSIXDAY_MSG' => env('RUN_USER_VRFSIXDAY_MSG_NOTIFICATION_TEST', false),
+
+        // NEED TO ADD THIS CHECK TO FILE
+        // 📝 Reminder to complete registration
+        'REMINDER_REG' => env('RUN_REMINDER_REG_NOTIFICATION_TEST', false),
+
+        // 🕒 Unverified user reminder
+        'Unverified Reminder' => env('RUN_UNVERIFIED_REMINDER_NOTIFICATION_TEST', false),
+
+        // 🗑️ Delete unverified user
+        'Delete Unverified Users' => env('RUN_UNVERIFIED_DELETE_NOTIFICATION_TEST', false),
+
+        // ✅ Heartbeat logger (EveryMinuteLogCommand)
+        'RUN_EVERY_MINUTE_LOG' => env('RUN_EVERY_MINUTE_LOG', false),
+
+        // ✅ Watchdog monitor (CheckEveryMinuteHealthCommand)
+        'EVERY_MINUTE_WATCHDOG' => env('RUN_EVERY_MINUTE_WATCHDOG', false),
+
+    ],
+
+        // New: Offset for personal notifications (in hours)
+        'personal_offset_hours' => env('PERSONAL_OFFSET_HOURS', 3), // Default 3; set to 0 to disable
+];

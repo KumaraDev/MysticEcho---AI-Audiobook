@@ -60,11 +60,31 @@
                         </div>
                     </div>
 
+                    {% if project.status == 'completed' %}
+                    <div class="alert alert-success">
+                        <i data-feather="check-circle" class="me-2"></i>
+                        <strong>Audio Ready!</strong><br>
+                        Your audiobook has been generated and is ready for export. Download options will be available once OpenAI TTS integration is complete.
+                    </div>
+                    {% elif project.status == 'generating_audio' %}
+                    <div class="alert alert-warning">
+                        <i data-feather="clock" class="me-2"></i>
+                        <strong>Audio Generation in Progress</strong><br>
+                        Your audiobook is currently being processed. Please wait for generation to complete before exporting.
+                    </div>
+                    {% else %}
                     <div class="alert alert-info">
                         <i data-feather="info" class="me-2"></i>
-                        <strong>Ready for Implementation</strong><br>
-                        Export functionality will be available once audio generation is completed. Your audiobook will be packaged in professional formats ready for distribution.
+                        <strong>Generate Audio First</strong><br>
+                        You need to generate audio from your manuscript before you can export your audiobook.
+                        <div class="mt-2">
+                            <a href="{{ url_for('audio.generate_audio', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i data-feather="mic" class="me-1"></i>
+                                Generate Audio
+                            </a>
+                        </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

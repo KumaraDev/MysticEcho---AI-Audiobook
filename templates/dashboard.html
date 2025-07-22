@@ -2,6 +2,34 @@
 
 {% block title %}Dashboard - Mystic Echo{% endblock %}
 
+{% block extra_head %}
+<style>
+.badge-status-draft {
+    background-color: var(--bs-secondary) !important;
+    color: white;
+}
+.badge-status-in_progress {
+    background-color: var(--bs-info) !important;
+    color: white;
+}
+.badge-status-generating_audio {
+    background-color: var(--bs-warning) !important;
+    color: var(--bs-dark);
+}
+.badge-status-completed {
+    background-color: var(--bs-success) !important;
+    color: white;
+}
+.project-card {
+    transition: all 0.2s ease;
+}
+.project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <!-- Welcome Header -->
