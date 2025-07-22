@@ -213,6 +213,55 @@ def delete_chapter(project_id, chapter_id):
         logging.error(f"Delete chapter error: {e}")
         return jsonify({'error': 'Failed to delete chapter'}), 500
 
+@editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>/move', methods=['POST'])
+@login_required
+def move_chapter(project_id, chapter_id):
+    """Move a chapter up or down in order"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    chapter = Chapter.query.filter_by(id=chapter_id, project_id=project_id).first()
+    if not chapter:
+        return jsonify({'error': 'Chapter not found'}), 404
+    
+    data = request.get_json()
+    direction = data.get('direction')
+    
+    if direction not in ['up', 'down']:
+        return jsonify({'error': 'Invalid direction'}), 400
+    
+    try:
+        # Get all chapters for this project ordered by index
+        chapters = Chapter.query.filter_by(project_id=project_id).order_by(Chapter.order_index).all()
+        
+        current_index = chapter.order_index
+        
+        if direction == 'up' and current_index > 1:
+            # Find the chapter with the previous order index
+            prev_chapter = next((ch for ch in chapters if ch.order_index == current_index - 1), None)
+            if prev_chapter:
+                # Swap order indices
+                prev_chapter.order_index = current_index
+                chapter.order_index = current_index - 1
+        elif direction == 'down':
+            # Find the chapter with the next order index
+            next_chapter = next((ch for ch in chapters if ch.order_index == current_index + 1), None)
+            if next_chapter:
+                # Swap order indices
+                next_chapter.order_index = current_index
+                chapter.order_index = current_index + 1
+        
+        db.session.commit()
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Move chapter error: {e}")
+        return jsonify({'error': 'Failed to move chapter'}), 500
+
 @editor_bp.route('/project/<int:project_id>/chapters/reorder', methods=['POST'])
 @login_required
 def reorder_chapters(project_id):

@@ -106,14 +106,39 @@
                     
                     <!-- Default Message (shown when no chapter is selected) -->
                     <div id="default-editor-message" class="d-flex align-items-center justify-content-center" style="height: 600px; background-color: var(--bs-gray-100); color: var(--bs-gray-600);">
-                        <div class="text-center">
-                            <i data-feather="layers" style="width: 64px; height: 64px;" class="mb-3 text-muted"></i>
-                            <h5 class="text-muted mb-2">Select a chapter to begin editing</h5>
-                            <p class="text-muted mb-3">Choose a chapter from the sidebar or create a new one to start writing</p>
-                            <button class="btn btn-outline-primary" onclick="quickCreateChapter()">
-                                <i data-feather="plus" class="me-1"></i>
-                                Create New Chapter
-                            </button>
+                        <div class="text-center w-100" style="max-width: 500px;">
+                            {% if chapters %}
+                                <i data-feather="layers" style="width: 64px; height: 64px;" class="mb-3 text-muted"></i>
+                                <h5 class="text-muted mb-3">Select a chapter to begin editing</h5>
+                                
+                                <!-- Chapter Quick List -->
+                                <div class="list-group mb-4">
+                                    {% for chapter in chapters %}
+                                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" 
+                                            onclick="editChapterInline({{ chapter.id }})">
+                                        <div class="text-start">
+                                            <div class="fw-semibold">{{ chapter.title }}</div>
+                                            <small class="text-muted">{{ (chapter.content.split()|length) if chapter.content else 0 }} words</small>
+                                        </div>
+                                        <i data-feather="edit-3" class="text-muted"></i>
+                                    </button>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Create New Chapter Option -->
+                                <button class="btn btn-outline-primary" onclick="quickCreateChapter()">
+                                    <i data-feather="plus" class="me-1"></i>
+                                    Create New Chapter
+                                </button>
+                            {% else %}
+                                <i data-feather="book-open" style="width: 64px; height: 64px;" class="mb-3 text-muted"></i>
+                                <h5 class="text-muted mb-2">Start organizing your audiobook</h5>
+                                <p class="text-muted mb-3">Create your first chapter to begin writing</p>
+                                <button class="btn btn-primary" onclick="quickCreateChapter()">
+                                    <i data-feather="plus" class="me-1"></i>
+                                    Create First Chapter
+                                </button>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -170,9 +195,22 @@
                                         {{ (chapter.content.split()|length) if chapter.content else 0 }} words
                                     </div>
                                 </div>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editChapterInline({{ chapter.id }})">
-                                    <i data-feather="edit-3"></i>
-                                </button>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="editChapterInline({{ chapter.id }})">
+                                        <i data-feather="edit-3"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" onclick="moveChapterUp({{ chapter.id }})" 
+                                            {% if loop.first %}disabled{% endif %} title="Move Up">
+                                        <i data-feather="chevron-up"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" onclick="moveChapterDown({{ chapter.id }})" 
+                                            {% if loop.last %}disabled{% endif %} title="Move Down">
+                                        <i data-feather="chevron-down"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="deleteChapterFromSidebar({{ chapter.id }})" title="Delete">
+                                        <i data-feather="trash-2"></i>
+                                    </button>
+                                </div>
                             </div>
                             {% endfor %}
                             {% if chapters|length > 5 %}
@@ -400,6 +438,64 @@
         document.getElementById('ai-improve-btn').disabled = true;
         document.getElementById('ai-expand-btn').disabled = true;
         document.getElementById('ai-summarize-btn').disabled = true;
+    }
+    
+    // Chapter management functions
+    function moveChapterUp(chapterId) {
+        moveChapter(chapterId, 'up');
+    }
+    
+    function moveChapterDown(chapterId) {
+        moveChapter(chapterId, 'down');
+    }
+    
+    function moveChapter(chapterId, direction) {
+        fetch(`/editor/project/${projectId}/chapter/${chapterId}/move`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ direction: direction })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Refresh to show new order
+            } else {
+                alert(data.error || 'Failed to move chapter');
+            }
+        })
+        .catch(error => {
+            console.error('Error moving chapter:', error);
+            alert('Failed to move chapter');
+        });
+    }
+    
+    function deleteChapterFromSidebar(chapterId) {
+        if (!confirm('Are you sure you want to delete this chapter? This action cannot be undone.')) {
+            return;
+        }
+        
+        fetch(`/editor/project/${projectId}/chapter/${chapterId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // If we're currently editing this chapter, exit chapter mode
+                if (isChapterMode && currentChapterId === chapterId) {
+                    resetToManuscriptMode();
+                } else {
+                    location.reload();
+                }
+            } else {
+                alert(data.error || 'Failed to delete chapter');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting chapter:', error);
+            alert('Failed to delete chapter');
+        });
     }
     
     function editChapterInline(chapterId) {
