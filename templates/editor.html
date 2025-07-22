@@ -51,9 +51,9 @@
                     <input type="file" id="pdf-upload" accept=".pdf" style="display: none;">
                     
                     <!-- Save Button -->
-                    <button class="btn btn-success" id="save-btn" onclick="saveProject()">
+                    <button class="btn btn-success" id="save-btn" onclick="handleSave()">
                         <i data-feather="save" class="me-1"></i>
-                        Save
+                        <span id="save-btn-text">Save</span>
                     </button>
                 </div>
             </div>
@@ -66,10 +66,22 @@
             <div class="card border-0 h-100">
                 <div class="card-header bg-transparent border-0 pb-2">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">
-                            <i data-feather="edit-3" class="me-2"></i>
-                            Manuscript Editor
-                        </h6>
+                        <div class="d-flex align-items-center">
+                            <h6 class="mb-0 me-3">
+                                <i data-feather="edit-3" class="me-2"></i>
+                                <span id="editor-mode-title">Manuscript Editor</span>
+                            </h6>
+                            <div id="chapter-editor-indicator" style="display: none;">
+                                <span class="badge bg-info">
+                                    <i data-feather="layers" class="me-1" style="width: 12px; height: 12px;"></i>
+                                    <span id="current-chapter-title">Chapter 1</span>
+                                </span>
+                                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="exitChapterMode()">
+                                    <i data-feather="x" class="me-1"></i>
+                                    Exit Chapter
+                                </button>
+                            </div>
+                        </div>
                         <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('improve')" id="ai-improve-btn">
                                 <i data-feather="cpu" class="me-1"></i>
@@ -87,6 +99,12 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
+                    <!-- Chapter Title Editor (hidden by default) -->
+                    <div id="chapter-title-editor" style="display: none;" class="p-3 border-bottom">
+                        <input type="text" id="chapter-title-input" class="form-control form-control-lg" placeholder="Chapter Title..." style="font-weight: 600;">
+                    </div>
+                    
+                    <!-- Main Content Editor -->
                     <textarea id="editor-content" class="form-control border-0" style="height: 600px; resize: vertical; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6;" placeholder="Start writing your audiobook here...">{{ project.content or '' }}</textarea>
                 </div>
             </div>
@@ -139,7 +157,7 @@
                                         {{ (chapter.content.split()|length) if chapter.content else 0 }} words
                                     </div>
                                 </div>
-                                <button class="btn btn-sm btn-outline-primary" onclick="editChapterQuick({{ chapter.id }})">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editChapterInline({{ chapter.id }})">
                                     <i data-feather="edit-3"></i>
                                 </button>
                             </div>
@@ -277,41 +295,7 @@
     </div>
 </div>
 
-<!-- Quick Chapter Editor Modal -->
-<div class="modal fade" id="quickChapterModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i data-feather="edit-3" class="me-2"></i>
-                    <span id="quick-modal-title">Edit Chapter</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="quick-chapter-form">
-                    <div class="mb-3">
-                        <label for="quick-chapter-title" class="form-label">Chapter Title</label>
-                        <input type="text" class="form-control" id="quick-chapter-title" placeholder="Enter chapter title..." required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="quick-chapter-content" class="form-label">Content</label>
-                        <textarea id="quick-chapter-content" class="form-control" rows="20" 
-                                  style="font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6;"
-                                  placeholder="Write your chapter content here..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="saveQuickChapter()">
-                    <i data-feather="save" class="me-1"></i>
-                    Save Chapter
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -336,10 +320,35 @@
         if (e.ctrlKey || e.metaKey) {
             if (e.key === 's') {
                 e.preventDefault();
-                saveProject();
+                handleSave();
             }
         }
     });
+    
+    // Smart save function that handles both manuscript and chapter modes
+    function handleSave() {
+        if (isChapterMode && currentChapterId) {
+            saveCurrentChapter().then(() => {
+                // Show success feedback
+                const saveBtn = document.getElementById('save-btn');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i data-feather="check" class="me-1"></i>Saved';
+                saveBtn.classList.add('btn-outline-success');
+                saveBtn.classList.remove('btn-success');
+                
+                setTimeout(() => {
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.classList.remove('btn-outline-success');
+                    saveBtn.classList.add('btn-success');
+                    feather.replace();
+                }, 2000);
+            }).catch(error => {
+                alert('Failed to save chapter: ' + error);
+            });
+        } else {
+            saveProject();
+        }
+    }
     
     // Chapter Management Functions
     function quickCreateChapter() {
@@ -367,19 +376,32 @@
         }
     }
     
-    function editChapterQuick(chapterId) {
+    function editChapterInline(chapterId) {
         currentChapterId = chapterId;
-        document.getElementById('quick-modal-title').textContent = 'Edit Chapter';
+        isChapterMode = true;
         
         // Fetch chapter data
         fetch(`/editor/project/${projectId}/chapter/${chapterId}`)
             .then(response => response.json())
             .then(data => {
-                document.getElementById('quick-chapter-title').value = data.title;
-                document.getElementById('quick-chapter-content').value = data.content;
+                // Switch to chapter editing mode
+                document.getElementById('editor-mode-title').textContent = 'Chapter Editor';
+                document.getElementById('current-chapter-title').textContent = data.title;
+                document.getElementById('chapter-editor-indicator').style.display = 'flex';
+                document.getElementById('chapter-title-editor').style.display = 'block';
                 
-                const modal = new bootstrap.Modal(document.getElementById('quickChapterModal'));
-                modal.show();
+                // Load chapter data into editors
+                document.getElementById('chapter-title-input').value = data.title;
+                document.getElementById('editor-content').value = data.content;
+                document.getElementById('editor-content').placeholder = 'Write your chapter content here...';
+                
+                // Update save button text
+                document.getElementById('save-btn-text').textContent = 'Save Chapter';
+                
+                // Auto-save chapter content on changes
+                setupChapterAutoSave();
+                
+                feather.replace(); // Re-render feather icons
             })
             .catch(error => {
                 console.error('Error loading chapter:', error);
@@ -387,40 +409,118 @@
             });
     }
     
-    function saveQuickChapter() {
-        const title = document.getElementById('quick-chapter-title').value.trim();
-        const content = document.getElementById('quick-chapter-content').value;
+    function exitChapterMode() {
+        if (isChapterMode && currentChapterId) {
+            // Save current chapter before exiting
+            saveCurrentChapter().then(() => {
+                resetToManuscriptMode();
+            }).catch(() => {
+                if (confirm('Failed to save chapter. Exit anyway?')) {
+                    resetToManuscriptMode();
+                }
+            });
+        } else {
+            resetToManuscriptMode();
+        }
+    }
+    
+    function resetToManuscriptMode() {
+        isChapterMode = false;
+        currentChapterId = null;
+        
+        // Reset UI
+        document.getElementById('editor-mode-title').textContent = 'Manuscript Editor';
+        document.getElementById('chapter-editor-indicator').style.display = 'none';
+        document.getElementById('chapter-title-editor').style.display = 'none';
+        document.getElementById('save-btn-text').textContent = 'Save';
+        
+        // Load project content
+        document.getElementById('editor-content').value = originalProjectContent;
+        document.getElementById('editor-content').placeholder = 'Start writing your audiobook here...';
+        
+        // Clear chapter auto-save interval
+        clearChapterAutoSave();
+        
+        // Reload page to refresh chapter list
+        location.reload();
+    }
+    
+    function saveCurrentChapter() {
+        if (!isChapterMode || !currentChapterId) {
+            return Promise.resolve();
+        }
+        
+        const title = document.getElementById('chapter-title-input').value.trim();
+        const content = document.getElementById('editor-content').value;
         
         if (!title) {
             alert('Please enter a chapter title');
-            return;
+            return Promise.reject('No title');
         }
         
-        const data = { title, content };
-        
-        fetch(`/editor/project/${projectId}/chapter/${currentChapterId}`, {
+        return fetch(`/editor/project/${projectId}/chapter/${currentChapterId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ title, content })
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                bootstrap.Modal.getInstance(document.getElementById('quickChapterModal')).hide();
-                location.reload(); // Refresh to show updated chapters
-            } else {
-                alert(data.error || 'Failed to save chapter');
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to save chapter');
             }
-        })
-        .catch(error => {
-            console.error('Error saving chapter:', error);
-            alert('Failed to save chapter');
+            
+            // Update the chapter title in the indicator
+            document.getElementById('current-chapter-title').textContent = title;
+            
+            return data;
         });
     }
     
-    // Global variable to track current chapter being edited
+    let chapterAutoSaveInterval = null;
+    
+    function setupChapterAutoSave() {
+        clearChapterAutoSave();
+        
+        // Auto-save every 10 seconds when in chapter mode
+        chapterAutoSaveInterval = setInterval(() => {
+            if (isChapterMode && currentChapterId) {
+                saveCurrentChapter().catch(error => {
+                    console.error('Auto-save failed:', error);
+                });
+            }
+        }, 10000);
+        
+        // Also save on title/content change (debounced)
+        let saveTimeout;
+        const debouncedSave = () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                if (isChapterMode && currentChapterId) {
+                    saveCurrentChapter().catch(error => {
+                        console.error('Auto-save failed:', error);
+                    });
+                }
+            }, 2000);
+        };
+        
+        document.getElementById('chapter-title-input').addEventListener('input', debouncedSave);
+        document.getElementById('editor-content').addEventListener('input', debouncedSave);
+    }
+    
+    function clearChapterAutoSave() {
+        if (chapterAutoSaveInterval) {
+            clearInterval(chapterAutoSaveInterval);
+            chapterAutoSaveInterval = null;
+        }
+    }
+    
+
+    
+    // Global variables for chapter editing
     let currentChapterId = null;
+    let isChapterMode = false;
+    let originalProjectContent = document.getElementById('editor-content').value;
 </script>
 {% endblock %}
