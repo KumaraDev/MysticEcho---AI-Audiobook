@@ -10,9 +10,13 @@ dashboard_bp = Blueprint('dashboard', __name__)
 @login_required
 def index():
     user_id = session.get('user_id')
+    logging.info(f"Dashboard access - user_id from session: {user_id}")
+    logging.info(f"Session data: {dict(session)}")
+    
     user = User.query.get(user_id)
     
     if not user:
+        logging.error(f"User not found for user_id: {user_id}")
         flash('User not found.', 'error')
         return redirect(url_for('auth.logout'))
     

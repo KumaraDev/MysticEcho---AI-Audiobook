@@ -31,7 +31,7 @@
                     <div class="tab-content" id="authTabsContent">
                         <!-- Login Form -->
                         <div class="tab-pane fade show active" id="login-form" role="tabpanel">
-                            <form method="POST" action="{{ url_for('auth.login') }}">
+                            <form method="POST" action="{{ url_for('auth.login') }}" id="loginForm">
                                 <div class="mb-3">
                                     <label for="username" class="form-label">Username</label>
                                     <div class="input-group">
@@ -68,7 +68,7 @@
                         
                         <!-- Register Form -->
                         <div class="tab-pane fade" id="register-form" role="tabpanel">
-                            <form method="POST" action="{{ url_for('auth.register') }}">
+                            <form method="POST" action="{{ url_for('auth.register') }}" id="registerForm">
                                 <div class="mb-3">
                                     <label for="reg-username" class="form-label">Username</label>
                                     <div class="input-group">
@@ -195,6 +195,24 @@
         tab.addEventListener('shown.bs.tab', function() {
             feather.replace();
         });
+    });
+    
+    // Add debugging to login form
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        console.log('Login form submitted');
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        console.log('Username:', username);
+        console.log('Password length:', password.length);
+    });
+    
+    // Add debugging to register form  
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        console.log('Register form submitted');
+        const username = document.getElementById('reg-username').value;
+        const email = document.getElementById('email').value;
+        console.log('Username:', username);
+        console.log('Email:', email);
     });
 </script>
 {% endblock %}

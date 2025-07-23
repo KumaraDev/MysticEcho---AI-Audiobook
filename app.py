@@ -18,6 +18,12 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+# Session configuration for better reliability
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.permanent_session_lifetime = 86400  # 24 hours
+
 # Configure the database
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///mystic_echo.db")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {

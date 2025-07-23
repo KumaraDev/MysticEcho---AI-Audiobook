@@ -37,6 +37,7 @@ def login():
                 
                 flash(f'Welcome back, {user.username}!', 'success')
                 logging.info(f"User {username} logged in successfully")
+                logging.info(f"Session data set: user_id={session.get('user_id')}, username={session.get('username')}")
                 return redirect(url_for('dashboard.index'))
         
         flash('Invalid username or password.', 'error')
