@@ -136,57 +136,60 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-body p-0" style="position: relative;">
+                <div class="card-body p-0" style="position: relative; min-height: 600px;">
                     <!-- Chapter Title Editor (hidden by default) -->
                     <div id="chapter-title-editor" style="display: none;" class="p-3 border-bottom">
                         <input type="text" id="chapter-title-input" class="form-control form-control-lg" placeholder="Chapter Title..." style="font-weight: 600;">
                     </div>
                     
-                    <!-- Default Message (shown when no chapter is selected) -->
-                    <div id="default-editor-message" class="d-flex align-items-center justify-content-center" style="height: 600px; background-color: var(--bs-gray-100); color: var(--bs-gray-600);">
-                        <div class="text-center w-100" style="max-width: 500px;">
-                            {% if chapters %}
-                                <i data-feather="layers" style="width: 64px; height: 64px;" class="mb-3 text-muted"></i>
-                                <h5 class="text-muted mb-3">Select a chapter to begin editing</h5>
-                                
-                                <!-- Chapter Quick List with Drag and Drop -->
-                                <div class="mb-4" id="chapter-quick-list">
-                                    {% for chapter in chapters %}
-                                    <div class="chapter-item card mb-2" draggable="true" data-chapter-id="{{ chapter.id }}" data-order="{{ chapter.order_index }}">
-                                        <div class="card-body p-3 d-flex justify-content-between align-items-center" style="cursor: pointer;" onclick="editChapterInline({{ chapter.id }})">
-                                            <div class="text-start">
-                                                <div class="fw-semibold text-light">{{ chapter.title }}</div>
-                                                <small class="text-muted">{{ (chapter.content.split()|length) if chapter.content else 0 }} words</small>
-                                            </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <i data-feather="move" class="text-muted drag-handle" style="cursor: grab;"></i>
-                                                <i data-feather="edit-3" class="text-muted"></i>
+                    <!-- Container that holds either default message OR chapter editor -->
+                    <div id="editor-container" style="height: 600px;">
+                        <!-- Default Message (shown when no chapter is selected) -->
+                        <div id="default-editor-message" class="d-flex align-items-center justify-content-center h-100" style="background-color: var(--bs-gray-100); color: var(--bs-gray-600);">
+                            <div class="text-center w-100" style="max-width: 500px;">
+                                {% if chapters %}
+                                    <i data-feather="layers" style="width: 64px; height: 64px;" class="mb-3 text-muted"></i>
+                                    <h5 class="text-muted mb-3">Select a chapter to begin editing</h5>
+                                    
+                                    <!-- Chapter Quick List with Drag and Drop -->
+                                    <div class="mb-4" id="chapter-quick-list">
+                                        {% for chapter in chapters %}
+                                        <div class="chapter-item card mb-2" draggable="true" data-chapter-id="{{ chapter.id }}" data-order="{{ chapter.order_index }}">
+                                            <div class="card-body p-3 d-flex justify-content-between align-items-center" style="cursor: pointer;" onclick="editChapterInline({{ chapter.id }})">
+                                                <div class="text-start">
+                                                    <div class="fw-semibold text-light">{{ chapter.title }}</div>
+                                                    <small class="text-muted">{{ (chapter.content.split()|length) if chapter.content else 0 }} words</small>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i data-feather="move" class="text-muted drag-handle" style="cursor: grab;"></i>
+                                                    <i data-feather="edit-3" class="text-muted"></i>
+                                                </div>
                                             </div>
                                         </div>
+                                        {% endfor %}
                                     </div>
-                                    {% endfor %}
-                                </div>
-                                
-                                <!-- Create New Chapter Option -->
-                                <button class="btn btn-outline-primary" onclick="quickCreateChapter()">
-                                    <i data-feather="plus" class="me-1"></i>
-                                    Create New Chapter
-                                </button>
-                            {% else %}
-                                <i data-feather="book-open" style="width: 64px; height: 64px;" class="mb-3 text-muted"></i>
-                                <h5 class="text-muted mb-2">Start organizing your audiobook</h5>
-                                <p class="text-muted mb-3">Create your first chapter to begin writing</p>
-                                <button class="btn btn-primary" onclick="quickCreateChapter()">
-                                    <i data-feather="plus" class="me-1"></i>
-                                    Create First Chapter
-                                </button>
-                            {% endif %}
+                                    
+                                    <!-- Create New Chapter Option -->
+                                    <button class="btn btn-outline-primary" onclick="quickCreateChapter()">
+                                        <i data-feather="plus" class="me-1"></i>
+                                        Create New Chapter
+                                    </button>
+                                {% else %}
+                                    <i data-feather="book-open" style="width: 64px; height: 64px;" class="mb-3 text-muted"></i>
+                                    <h5 class="text-muted mb-2">Start organizing your audiobook</h5>
+                                    <p class="text-muted mb-3">Create your first chapter to begin writing</p>
+                                    <button class="btn btn-primary" onclick="quickCreateChapter()">
+                                        <i data-feather="plus" class="me-1"></i>
+                                        Create First Chapter
+                                    </button>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Chapter Content Editor (hidden by default) -->
-                    <div id="chapter-content-editor" style="display: none; height: 600px;">
-                        <textarea id="chapter-editor-content" class="form-control border-0 w-100 h-100" style="resize: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Start writing your chapter here..."></textarea>
+                        
+                        <!-- Chapter Content Editor (hidden by default) -->
+                        <div id="chapter-content-editor" style="display: none;" class="h-100">
+                            <textarea id="chapter-editor-content" class="form-control border-0 w-100 h-100" style="resize: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Start writing your chapter here..."></textarea>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -711,28 +714,28 @@
                 document.getElementById('chapter-editor-indicator').style.display = 'flex';
                 document.getElementById('chapter-title-editor').style.display = 'block';
                 
-                // Completely hide default message and show only chapter editor
-                const defaultMessage = document.getElementById('default-editor-message');
-                const chapterEditor = document.getElementById('chapter-content-editor');
+                // Completely replace container content with only chapter editor
+                const editorContainer = document.getElementById('editor-container');
                 const titleEditor = document.getElementById('chapter-title-editor');
                 
-                // Hide all default content
-                defaultMessage.style.display = 'none';
-                defaultMessage.style.visibility = 'hidden';
-                
-                // Show chapter editor and title editor
-                chapterEditor.style.display = 'block';
+                // Show title editor
                 titleEditor.style.display = 'block';
                 document.getElementById('chapter-version-history').style.display = 'block';
+                
+                // Replace container content with only the chapter editor
+                editorContainer.innerHTML = `
+                    <div id="chapter-content-editor" class="h-100">
+                        <textarea id="chapter-editor-content" class="form-control border-0 w-100 h-100" style="resize: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Write your chapter content here..."></textarea>
+                    </div>
+                `;
                 
                 // Load chapter data into editors
                 document.getElementById('chapter-title-input').value = data.title || '';
                 document.getElementById('chapter-editor-content').value = data.content || '';
-                document.getElementById('chapter-editor-content').placeholder = 'Write your chapter content here...';
                 
                 // Calculate proper height accounting for title editor
                 const titleHeight = titleEditor.offsetHeight || 80;
-                document.getElementById('chapter-editor-content').style.height = `calc(600px - ${titleHeight}px)`;
+                document.getElementById('editor-container').style.height = `${600 - titleHeight}px`;
                 
                 // Initialize the editor for this chapter
                 if (mysticEditor) {
@@ -791,11 +794,22 @@
         document.getElementById('chapter-title-editor').style.display = 'none';
         document.getElementById('save-btn-text').textContent = 'Save';
         
-        // Show default message and hide chapter editor
-        const defaultMessage = document.getElementById('default-editor-message');
-        defaultMessage.style.display = 'flex';
-        defaultMessage.style.visibility = 'visible';
-        document.getElementById('chapter-content-editor').style.display = 'none';
+        // Restore original container content with default message
+        const editorContainer = document.getElementById('editor-container');
+        editorContainer.innerHTML = `
+            <!-- Default Message (shown when no chapter is selected) -->
+            <div id="default-editor-message" class="d-flex align-items-center justify-content-center h-100" style="background-color: var(--bs-gray-100); color: var(--bs-gray-600);">
+                <div class="text-center w-100" style="max-width: 500px;">
+                    <div class="text-muted mb-3">Select a chapter to begin editing</div>
+                </div>
+            </div>
+            
+            <!-- Chapter Content Editor (hidden by default) -->
+            <div id="chapter-content-editor" style="display: none;" class="h-100">
+                <textarea id="chapter-editor-content" class="form-control border-0 w-100 h-100" style="resize: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Start writing your chapter here..."></textarea>
+            </div>
+        `;
+        editorContainer.style.height = '600px';
         document.getElementById('chapter-version-history').style.display = 'none';
         
         // Disable AI buttons and save button
