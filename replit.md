@@ -23,9 +23,10 @@ The application follows a modular Flask architecture with clear separation of co
 ## Key Components
 
 ### Authentication System
-- User registration and login with password hashing
-- Session-based authentication with user context
-- Login required decorators for protected routes
+- Replit OAuth authentication with flask-dance and flask-login
+- Secure session management with browser session keys
+- OAuth token storage and refresh handling
+- Protected routes using @require_login decorator
 
 ### Database Models
 - **User**: Core user accounts with relationships to projects

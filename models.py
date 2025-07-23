@@ -1,29 +1,44 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+
 from app import db
-from werkzeug.security import generate_password_hash, check_password_hash
-import secrets
+from flask_dance.consumer.storage.sqla import OAuthConsumerMixin
+from flask_login import UserMixin
+from sqlalchemy import UniqueConstraint
 
-class User(db.Model):
+
+# (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+class User(UserMixin, db.Model):
     __tablename__ = 'users'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationship to projects
-    projects = db.relationship('Project', backref='owner', lazy=True, cascade='all, delete-orphan')
-    
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-    
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-    
-    def __repr__(self):
-        return f'<User {self.username}>'
+    id = db.Column(db.String, primary_key=True)
+    email = db.Column(db.String, unique=True, nullable=True)
+    first_name = db.Column(db.String, nullable=True)
+    last_name = db.Column(db.String, nullable=True)
+    profile_image_url = db.Column(db.String, nullable=True)
 
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime,
+                           default=datetime.now,
+                           onupdate=datetime.now)
+    
+    # Relationships - update foreign key to use String
+    projects = db.relationship('Project', backref='user', lazy=True, cascade='all, delete-orphan')
+
+
+# (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+class OAuth(OAuthConsumerMixin, db.Model):
+    user_id = db.Column(db.String, db.ForeignKey(User.id))
+    browser_session_key = db.Column(db.String, nullable=False)
+    user = db.relationship(User)
+
+    __table_args__ = (UniqueConstraint(
+        'user_id',
+        'browser_session_key',
+        'provider',
+        name='uq_user_browser_session_key_provider',
+    ),)
+
+
+# Existing project models with updated foreign keys
 class Project(db.Model):
     __tablename__ = 'projects'
     
@@ -31,9 +46,9 @@ class Project(db.Model):
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     content = db.Column(db.Text, default='')
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)  # Changed to String
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     status = db.Column(db.String(20), default='draft')  # draft, in_progress, completed
     
     # Storage and file information
@@ -42,6 +57,7 @@ class Project(db.Model):
     
     def __repr__(self):
         return f'<Project {self.title}>'
+
 
 class ProjectVersion(db.Model):
     __tablename__ = 'project_versions'
@@ -53,7 +69,7 @@ class ProjectVersion(db.Model):
     content = db.Column(db.Text, nullable=False)
     version_number = db.Column(db.Integer, nullable=False)
     word_count = db.Column(db.Integer, default=0)  # Track word count
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
     notes = db.Column(db.Text)
     
     project = db.relationship('Project', backref='versions')
@@ -61,6 +77,7 @@ class ProjectVersion(db.Model):
     
     def __repr__(self):
         return f'<ProjectVersion {self.project_id}:{self.version_number}>'
+
 
 class Chapter(db.Model):
     __tablename__ = 'chapters'
@@ -70,36 +87,10 @@ class Chapter(db.Model):
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, default='')
     order_index = db.Column(db.Integer, nullable=False, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
-    project = db.relationship('Project', backref=db.backref('chapters', order_by='Chapter.order_index', lazy=True))
+    project = db.relationship('Project', backref='chapters')
     
     def __repr__(self):
         return f'<Chapter {self.title}>'
-
-class PasswordResetToken(db.Model):
-    __tablename__ = 'password_reset_tokens'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    token = db.Column(db.String(100), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    used = db.Column(db.Boolean, default=False)
-    
-    user = db.relationship('User', backref='reset_tokens')
-    
-    def __init__(self, user_id, hours=1):
-        self.user_id = user_id
-        self.token = secrets.token_urlsafe(32)
-        self.expires_at = datetime.utcnow() + timedelta(hours=hours)
-    
-    def is_valid(self):
-        return not self.used and datetime.utcnow() < self.expires_at
-    
-    def mark_used(self):
-        self.used = True
-    
-    def __repr__(self):
-        return f'<PasswordResetToken {self.token[:8]}...>'

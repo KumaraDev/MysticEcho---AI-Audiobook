@@ -11,55 +11,26 @@ logging.basicConfig(level=logging.DEBUG)
 class Base(DeclarativeBase):
     pass
 
-db = SQLAlchemy(model_class=Base)
-
-# Create the app
+# Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET")
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for to generate with https
 
-# Session configuration for better reliability
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = False  # Allow JavaScript access for debugging
-app.config['SESSION_COOKIE_SAMESITE'] = None  # More permissive for development
-app.config['SESSION_COOKIE_DOMAIN'] = None  # Let Flask auto-detect
-app.permanent_session_lifetime = 86400  # 24 hours
-
-# Configure the database
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///mystic_echo.db")
+# Database configuration
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    'pool_pre_ping': True,
     "pool_recycle": 300,
-    "pool_pre_ping": True,
 }
 
-# File upload configuration
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-app.config['UPLOAD_FOLDER'] = 'uploads'
-
-# Initialize the app with the extension
+db = SQLAlchemy(model_class=Base)
+# initialize the app with the extension, flask-sqlalchemy >= 3.0.x
 db.init_app(app)
 
+# Create tables
+# Need to put this in module-level to make it work with Gunicorn.
 with app.app_context():
-    # Import models to ensure tables are created
     import models  # noqa: F401
     db.create_all()
     logging.info("Database tables created")
-
-# Register blueprints
-from routes.auth import auth_bp
-from routes.editor import editor_bp
-from routes.dashboard import dashboard_bp
-from routes.audio import audio_bp
-
-app.register_blueprint(auth_bp, url_prefix='/auth')
-app.register_blueprint(editor_bp, url_prefix='/editor')
-app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
-app.register_blueprint(audio_bp, url_prefix='/audio')
-
-# Root route
-@app.route('/')
-def index():
-    from flask import session, redirect, url_for, render_template
-    if 'user_id' in session:
-        return redirect(url_for('dashboard.index'))
-    return render_template('landing.html')

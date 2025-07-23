@@ -1,212 +1,121 @@
-from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from models import Project, User
 from app import db
+from flask_login import current_user
+from replit_auth import require_login
 import os
 import tempfile
 import logging
 
 audio_bp = Blueprint('audio', __name__, url_prefix='/audio')
 
-def login_required(f):
-    """Decorator to require login for routes"""
-    from functools import wraps
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('auth.login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
 @audio_bp.route('/generate/<int:project_id>')
-@login_required
+@require_login
 def generate_audio(project_id):
     """Show audio generation interface"""
     try:
-        user = User.query.get(session['user_id'])
-        if not user:
-            flash('User not found', 'error')
-            return redirect(url_for('auth.login'))
-        
+        user = current_user
         project = Project.query.filter_by(id=project_id, user_id=user.id).first()
         
         if not project:
             flash('Project not found', 'error')
-            return redirect(url_for('dashboard.index'))
+            return redirect(url_for('dashboard'))
         
         return render_template('audio/generate.html', project=project)
         
     except Exception as e:
         logging.error(f"Error loading audio generation page: {e}")
         flash('Error loading audio generation page', 'error')
-        return redirect(url_for('dashboard.index'))
+        return redirect(url_for('dashboard'))
 
 @audio_bp.route('/generate_tts/<int:project_id>', methods=['POST'])
-@login_required
+@require_login
 def generate_tts(project_id):
     """Generate text-to-speech audio from project content"""
     try:
-        user = User.query.get(session['user_id'])
-        if not user:
-            return jsonify({'success': False, 'error': 'User not found'})
-        
+        user = current_user
         project = Project.query.filter_by(id=project_id, user_id=user.id).first()
         
         if not project:
             return jsonify({'success': False, 'error': 'Project not found'})
         
-        data = request.get_json()
-        voice_settings = data.get('voice_settings', {})
-        content_selection = data.get('content_selection', 'full')
+        # Get the text content to convert
+        content = project.content
+        if not content or not content.strip():
+            return jsonify({'success': False, 'error': 'No content to convert'})
         
-        # Check if content exists
-        if not project.content or project.content.strip() == '':
-            return jsonify({
-                'success': False, 
-                'error': 'No content found to convert to audio. Please add some text to your manuscript first.'
-            })
-        
-        # Check if OpenAI API key is available
-        openai_key = os.environ.get('OPENAI_API_KEY')
-        if not openai_key:
-            return jsonify({
-                'success': False,
-                'error': 'OpenAI API key not configured. Please add your OPENAI_API_KEY to enable audio generation.',
-                'needs_api_key': True
-            })
-        
-        # Update project status to indicate audio generation in progress
+        # Update project status to generating_audio
         project.status = 'generating_audio'
         db.session.commit()
         
-        # Calculate estimated processing time
-        word_count = len(project.content.split())
-        estimated_minutes = max(1, word_count // 200)  # Rough estimate: 200 words per minute of audio
-        
-        # In a real implementation, you would:
-        # 1. Split text into manageable chunks (OpenAI TTS has limits)
-        # 2. Generate audio files using OpenAI TTS API
-        # 3. Store them in cloud storage
-        # 4. Update project with audio file URLs
-        
+        # Here you would integrate with OpenAI TTS API
+        # For now, we'll return a placeholder response
         return jsonify({
             'success': True,
-            'message': f'Audio generation started! Processing {word_count} words (est. {estimated_minutes} min of audio).',
-            'status': 'processing',
-            'estimated_duration': estimated_minutes,
-            'word_count': word_count,
-            'voice': voice_settings.get('voice', 'alloy'),
-            'speed': voice_settings.get('speed', 1.0),
-            'redirect_url': url_for('audio.preview_audio', project_id=project_id)
+            'message': 'Audio generation started',
+            'audio_url': None  # Will be populated when actual TTS is implemented
         })
         
     except Exception as e:
-        logging.error(f"Error generating audio: {e}")
+        logging.error(f"TTS generation error: {e}")
         return jsonify({'success': False, 'error': 'Failed to generate audio'})
 
-@audio_bp.route('/chapters/<int:project_id>')
-@login_required
-def manage_chapters(project_id):
-    """Show chapter management interface"""
-    try:
-        user = User.query.get(session['user_id'])
-        if not user:
-            flash('User not found', 'error')
-            return redirect(url_for('auth.login'))
-        
-        project = Project.query.filter_by(id=project_id, user_id=user.id).first()
-        
-        if not project:
-            flash('Project not found', 'error')
-            return redirect(url_for('dashboard.index'))
-        
-        # Split content into potential chapters (basic implementation)
-        chapters = []
-        if project.content:
-            # Simple chapter detection based on headers or double line breaks
-            content_parts = project.content.split('\n\n')
-            for i, part in enumerate(content_parts):
-                if part.strip():
-                    chapters.append({
-                        'number': i + 1,
-                        'title': f'Chapter {i + 1}',
-                        'content': part.strip()[:100] + '...' if len(part) > 100 else part.strip(),
-                        'word_count': len(part.split())
-                    })
-        
-        return render_template('audio/chapters.html', project=project, chapters=chapters)
-        
-    except Exception as e:
-        logging.error(f"Error loading chapters page: {e}")
-        flash('Error loading chapters page', 'error')
-        return redirect(url_for('dashboard.index'))
-
 @audio_bp.route('/preview/<int:project_id>')
-@login_required
+@require_login
 def preview_audio(project_id):
-    """Show audio preview interface"""
+    """Preview generated audio"""
     try:
-        user = User.query.get(session['user_id'])
-        if not user:
-            flash('User not found', 'error')
-            return redirect(url_for('auth.login'))
-        
+        user = current_user
         project = Project.query.filter_by(id=project_id, user_id=user.id).first()
         
         if not project:
             flash('Project not found', 'error')
-            return redirect(url_for('dashboard.index'))
+            return redirect(url_for('dashboard'))
         
         return render_template('audio/preview.html', project=project)
         
     except Exception as e:
-        logging.error(f"Error loading audio preview page: {e}")
-        flash('Error loading audio preview page', 'error')
-        return redirect(url_for('dashboard.index'))
+        logging.error(f"Error loading audio preview: {e}")
+        flash('Error loading audio preview', 'error')
+        return redirect(url_for('dashboard'))
+
+@audio_bp.route('/download/<int:project_id>')
+@require_login
+def download_audio(project_id):
+    """Download generated audio file"""
+    try:
+        user = current_user
+        project = Project.query.filter_by(id=project_id, user_id=user.id).first()
+        
+        if not project:
+            return jsonify({'success': False, 'error': 'Project not found'})
+        
+        # Here you would implement the actual file download
+        # For now, return a placeholder response
+        return jsonify({
+            'success': True,
+            'download_url': f'/downloads/audiobook_{project_id}.mp3'
+        })
+        
+    except Exception as e:
+        logging.error(f"Audio download error: {e}")
+        return jsonify({'success': False, 'error': 'Failed to download audio'})
 
 @audio_bp.route('/export/<int:project_id>')
-@login_required
+@require_login
 def export_audiobook(project_id):
-    """Show export/download interface"""
+    """Export audiobook in various formats"""
     try:
-        user = User.query.get(session['user_id'])
-        if not user:
-            flash('User not found', 'error')
-            return redirect(url_for('auth.login'))
-        
+        user = current_user
         project = Project.query.filter_by(id=project_id, user_id=user.id).first()
         
         if not project:
             flash('Project not found', 'error')
-            return redirect(url_for('dashboard.index'))
+            return redirect(url_for('dashboard'))
         
         return render_template('audio/export.html', project=project)
         
     except Exception as e:
         logging.error(f"Error loading export page: {e}")
         flash('Error loading export page', 'error')
-        return redirect(url_for('dashboard.index'))
-
-@audio_bp.route('/download/<int:project_id>')
-@login_required
-def download_audiobook(project_id):
-    """Download the complete audiobook"""
-    try:
-        user = User.query.get(session['user_id'])
-        if not user:
-            return jsonify({'success': False, 'error': 'User not found'})
-        
-        project = Project.query.filter_by(id=project_id, user_id=user.id).first()
-        
-        if not project:
-            return jsonify({'success': False, 'error': 'Project not found'})
-        
-        # Placeholder for actual download functionality
-        return jsonify({
-            'success': True,
-            'message': 'Download feature will be implemented after audio generation is complete',
-            'download_url': None
-        })
-        
-    except Exception as e:
-        logging.error(f"Error downloading audiobook: {e}")
-        return jsonify({'success': False, 'error': 'Failed to download audiobook'})
+        return redirect(url_for('dashboard'))
