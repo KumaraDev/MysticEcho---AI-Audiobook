@@ -17,7 +17,7 @@ def index():
     logging.info(f"Dashboard access - user_id from session: {user_id}")
     logging.info(f"Full session data: {dict(session)}")
     
-    # Fallback: Check for user info in headers (backup auth method)
+    # Fallback: Check for user info in headers or localStorage backup
     if not user_id:
         backup_user_id = request.headers.get('X-User-ID')
         backup_username = request.headers.get('X-Username')

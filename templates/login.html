@@ -228,26 +228,43 @@
                 fetch('/auth/login', {
                     method: 'POST',
                     body: formData,
-                    credentials: 'include',  // Important for cookies
-                    redirect: 'follow'
+                    credentials: 'include',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 })
                 .then(response => {
                     console.log('AJAX login response:', response.status);
-                    if (response.redirected) {
-                        console.log('AJAX login succeeded, redirecting to:', response.url);
+                    if (response.status === 200) {
+                        return response.json();
+                    } else if (response.redirected) {
+                        console.log('AJAX got redirect, following to:', response.url);
                         window.location.href = response.url;
-                    } else if (response.status === 200) {
-                        console.log('Login successful, manually redirecting to dashboard');
-                        window.location.href = '/dashboard/';
+                        return null;
+                    }
+                    throw new Error('Login failed');
+                })
+                .then(data => {
+                    if (data && data.success) {
+                        console.log('AJAX login successful:', data);
+                        
+                        // Store user data in localStorage as backup
+                        localStorage.setItem('mystic_user_id', data.user_id);
+                        localStorage.setItem('mystic_username', data.username);
+                        localStorage.setItem('mystic_login_time', Date.now());
+                        
+                        console.log('Stored user data in localStorage, redirecting to dashboard');
+                        window.location.href = data.redirect_url || '/dashboard/';
                     }
                 })
                 .catch(error => {
                     console.error('AJAX login error:', error);
-                    // Final fallback: just go to dashboard anyway
-                    setTimeout(() => {
-                        console.log('All login attempts failed - forcing dashboard navigation');
-                        window.location.href = '/dashboard/';
-                    }, 1000);
+                    // Final fallback: store credentials and try dashboard
+                    localStorage.setItem('mystic_username', document.getElementById('username').value);
+                    localStorage.setItem('mystic_login_attempt', Date.now());
+                    
+                    console.log('Storing login attempt and redirecting to dashboard');
+                    window.location.href = '/dashboard/';
                 });
             }
         }, 2000);

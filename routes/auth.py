@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.security import generate_password_hash
 from models import User, PasswordResetToken
 from app import db
@@ -52,27 +52,26 @@ def login():
                 logging.info(f"Set new session: {new_session}")
                 
                 flash(f'Welcome back, {user.username}!', 'success')
-                logging.info(f"User {username} logged in successfully - redirecting to dashboard")
+                logging.info(f"User {username} logged in successfully")
                 
-                # Try multiple redirect strategies
+                # For AJAX requests, return JSON with user data
+                if request.headers.get('Content-Type') == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    logging.info("AJAX login request detected - returning JSON response")
+                    return jsonify({
+                        'success': True,
+                        'user_id': user.id,
+                        'username': user.username,
+                        'redirect_url': url_for('dashboard.index')
+                    })
+                
+                # Regular form submission - redirect normally
                 redirect_url = url_for('dashboard.index')
-                logging.info(f"Redirect URL: {redirect_url}")
-                
-                # Strategy 1: Regular redirect with explicit session save
-                try:
-                    session.modified = True
-                    db.session.commit()  # Ensure any session storage is committed
-                    logging.info("Session marked as modified and committed")
-                except:
-                    pass
+                logging.info(f"Regular form submission - redirecting to: {redirect_url}")
                 
                 response = redirect(redirect_url)
-                
-                # Strategy 2: Add backup user info to URL if session fails
                 response.headers['X-User-ID'] = str(user.id)
                 response.headers['X-Username'] = user.username
                 
-                logging.info(f"Response created with headers: {dict(response.headers)}")
                 logging.info("=== LOGIN REQUEST SUCCESS ===")
                 return response
             else:
