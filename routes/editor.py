@@ -273,6 +273,30 @@ def reorder_chapters(project_id):
         return jsonify({'error': 'Project not found'}), 404
     
     data = request.get_json()
+    new_order = data.get('order', [])
+    
+    if not new_order:
+        return jsonify({'error': 'No order data provided'}), 400
+    
+    try:
+        # Update the order_index for each chapter
+        for item in new_order:
+            chapter_id = item.get('id')
+            new_order_index = item.get('order')
+            
+            chapter = Chapter.query.filter_by(id=chapter_id, project_id=project_id).first()
+            if chapter:
+                chapter.order_index = new_order_index
+        
+        db.session.commit()
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Reorder chapters error: {e}")
+        return jsonify({'error': 'Failed to reorder chapters'}), 500
+    
+    data = request.get_json()
     chapter_order = data.get('chapter_order', [])
     
     try:
