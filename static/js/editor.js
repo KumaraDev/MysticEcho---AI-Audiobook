@@ -27,6 +27,10 @@ class MysticEditor {
     
     initializeEditor() {
         this.editor = document.getElementById('editor-content');
+        if (!this.editor) {
+            // Try chapter editor content if main editor not found
+            this.editor = document.getElementById('chapter-editor-content');
+        }
         if (this.editor) {
             this.currentContent = this.editor.value;
             this.lastSavedContent = this.currentContent;
@@ -314,6 +318,13 @@ function applySuggestion() {
     mysticEditor.showNotification('Suggestion applied successfully!', 'success');
     mysticEditor.updateWordCount();
     mysticEditor.scheduleAutoSave();
+}
+
+// Global function for updateWordCount for backward compatibility
+function updateWordCount() {
+    if (mysticEditor) {
+        mysticEditor.updateWordCount();
+    }
 }
 
 function updateStatus(newStatus) {
