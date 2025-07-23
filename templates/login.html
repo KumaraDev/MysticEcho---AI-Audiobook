@@ -204,6 +204,19 @@
         const password = document.getElementById('password').value;
         console.log('Username:', username);
         console.log('Password length:', password.length);
+        console.log('Current cookies:', document.cookie);
+        
+        // Check for any session cookies after 2 seconds
+        setTimeout(() => {
+            console.log('Cookies after submit:', document.cookie);
+            console.log('Current URL:', window.location.href);
+            
+            // If still on login page after 3 seconds, try direct navigation
+            if (window.location.pathname.includes('/auth/login') || window.location.pathname === '/') {
+                console.log('Still on login page - attempting direct dashboard navigation');
+                window.location.href = '/dashboard/';
+            }
+        }, 3000);
     });
     
     // Add debugging to register form  

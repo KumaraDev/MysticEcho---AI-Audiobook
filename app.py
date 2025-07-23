@@ -20,8 +20,9 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # Session configuration for better reliability
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY'] = False  # Allow JavaScript access for debugging
+app.config['SESSION_COOKIE_SAMESITE'] = None  # More permissive for development
+app.config['SESSION_COOKIE_DOMAIN'] = None  # Let Flask auto-detect
 app.permanent_session_lifetime = 86400  # 24 hours
 
 # Configure the database
