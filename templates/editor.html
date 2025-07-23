@@ -717,9 +717,17 @@
                 document.getElementById('chapter-version-history').style.display = 'block';
                 
                 // Load chapter data into editors
-                document.getElementById('chapter-title-input').value = data.title;
-                document.getElementById('chapter-editor-content').value = data.content;
+                document.getElementById('chapter-title-input').value = data.title || '';
+                document.getElementById('chapter-editor-content').value = data.content || '';
                 document.getElementById('chapter-editor-content').placeholder = 'Write your chapter content here...';
+                
+                // Initialize the editor for this chapter
+                if (mysticEditor) {
+                    mysticEditor.editor = document.getElementById('chapter-editor-content');
+                    mysticEditor.currentContent = data.content || '';
+                    mysticEditor.lastSavedContent = mysticEditor.currentContent;
+                    mysticEditor.updateWordCount();
+                }
                 
                 // Update save button text
                 document.getElementById('save-btn-text').textContent = 'Save Chapter';
