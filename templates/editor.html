@@ -2,6 +2,58 @@
 
 {% block title %}{{ project.title }} - Editor - Mystic Echo{% endblock %}
 
+{% block head %}
+    <!-- Quill.js CSS -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <!-- SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- Quill.js JavaScript -->
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <style>
+        /* Custom Quill.js dark theme styling */
+        .ql-toolbar.ql-snow {
+            border: 1px solid var(--bs-gray-600);
+            background-color: var(--bs-gray-800);
+        }
+        
+        .ql-container.ql-snow {
+            border: 1px solid var(--bs-gray-600);
+            background-color: var(--bs-gray-900);
+            color: var(--bs-light);
+        }
+        
+        .ql-editor {
+            font-family: 'Georgia', serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--bs-light);
+            min-height: 400px;
+        }
+        
+        .ql-snow .ql-stroke {
+            stroke: var(--bs-light);
+        }
+        
+        .ql-snow .ql-fill {
+            fill: var(--bs-light);
+        }
+        
+        .ql-snow .ql-picker-label {
+            color: var(--bs-light);
+        }
+        
+        .ql-snow.ql-toolbar button:hover,
+        .ql-snow .ql-toolbar button:hover {
+            background-color: var(--bs-gray-700);
+        }
+        
+        .ql-snow.ql-toolbar button.ql-active,
+        .ql-snow .ql-toolbar button.ql-active {
+            background-color: var(--bs-primary);
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 <style>
 .chapter-item {
@@ -188,7 +240,8 @@
                         
                         <!-- Chapter Content Editor (hidden by default) -->
                         <div id="chapter-content-editor" style="display: none;" class="h-100">
-                            <textarea id="chapter-editor-content" class="form-control border-0 w-100 h-100" style="resize: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Start writing your chapter here..."></textarea>
+                            <div id="quill-editor" style="height: 100%;"></div>
+                            <textarea id="chapter-editor-content" style="display: none;"></textarea>
                         </div>
                     </div>
                 </div>
@@ -725,21 +778,23 @@
                 // Replace container content with only the chapter editor
                 editorContainer.innerHTML = `
                     <div id="chapter-content-editor" class="h-100">
-                        <textarea id="chapter-editor-content" class="form-control border-0 w-100 h-100" style="resize: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Write your chapter content here..."></textarea>
+                        <div id="quill-editor" style="height: 100%;"></div>
+                        <textarea id="chapter-editor-content" style="display: none;"></textarea>
                     </div>
                 `;
                 
                 // Load chapter data into editors
                 document.getElementById('chapter-title-input').value = data.title || '';
-                document.getElementById('chapter-editor-content').value = data.content || '';
                 
                 // Calculate proper height accounting for title editor
                 const titleHeight = titleEditor.offsetHeight || 80;
                 document.getElementById('editor-container').style.height = `${600 - titleHeight}px`;
                 
+                // Initialize Quill.js editor
+                initializeQuillEditor(data.content || '');
+                
                 // Initialize the editor for this chapter
                 if (mysticEditor) {
-                    mysticEditor.editor = document.getElementById('chapter-editor-content');
                     mysticEditor.currentContent = data.content || '';
                     mysticEditor.lastSavedContent = mysticEditor.currentContent;
                     mysticEditor.updateWordCount();
@@ -806,7 +861,8 @@
             
             <!-- Chapter Content Editor (hidden by default) -->
             <div id="chapter-content-editor" style="display: none;" class="h-100">
-                <textarea id="chapter-editor-content" class="form-control border-0 w-100 h-100" style="resize: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Start writing your chapter here..."></textarea>
+                <div id="quill-editor" style="height: 100%;"></div>
+                <textarea id="chapter-editor-content" style="display: none;"></textarea>
             </div>
         `;
         editorContainer.style.height = '600px';
@@ -834,7 +890,7 @@
         }
         
         const title = document.getElementById('chapter-title-input').value.trim();
-        const content = document.getElementById('chapter-editor-content').value;
+        const content = quillEditor ? quillEditor.root.innerHTML : document.getElementById('chapter-editor-content').value;
         
         if (!title) {
             alert('Please enter a chapter title');
@@ -1009,6 +1065,11 @@
             if (data.success) {
                 // Reload the chapter content
                 document.getElementById('chapter-title-input').value = data.title;
+                
+                // Update both Quill editor and hidden textarea
+                if (quillEditor) {
+                    quillEditor.root.innerHTML = data.content || '';
+                }
                 document.getElementById('chapter-editor-content').value = data.content;
                 
                 // Refresh version history
@@ -1101,7 +1162,7 @@
         if (!currentChapterId || isChapterAutoSaving) return;
         
         const title = document.getElementById('chapter-title-input').value;
-        const content = document.getElementById('chapter-editor-content').value;
+        const content = quillEditor ? quillEditor.root.innerHTML : document.getElementById('chapter-editor-content').value;
         
         isChapterAutoSaving = true;
         updateAutoSaveStatus('Saving...');
@@ -1202,6 +1263,94 @@
     let currentChapterId = null;
     let isChapterMode = false;
     let originalProjectContent = document.getElementById('editor-content').value;
+    
+    // Global Quill.js editor instance
+    let quillEditor = null;
+    
+    function initializeQuillEditor(content = '') {
+        const editorElement = document.getElementById('quill-editor');
+        if (!editorElement || quillEditor) return;
+        
+        // Configure Quill.js with custom toolbar
+        quillEditor = new Quill('#quill-editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['blockquote'],
+                    [{ 'align': [] }],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Start writing your chapter here...',
+            scrollingContainer: '#quill-editor'
+        });
+        
+        // Set initial content
+        if (content) {
+            quillEditor.root.innerHTML = content;
+        }
+        
+        // Listen for content changes
+        quillEditor.on('text-change', function() {
+            // Update hidden textarea for form submission
+            const htmlContent = quillEditor.root.innerHTML;
+            document.getElementById('chapter-editor-content').value = htmlContent;
+            
+            // Update word count
+            updateWordCount();
+            
+            // Schedule auto-save
+            scheduleChapterAutoSave();
+            
+            // Update mystic editor content tracking
+            if (mysticEditor) {
+                mysticEditor.currentContent = htmlContent;
+            }
+        });
+        
+        // Focus the editor
+        setTimeout(() => {
+            quillEditor.focus();
+        }, 100);
+    }
+    
+    function getQuillContent() {
+        return quillEditor ? quillEditor.root.innerHTML : '';
+    }
+    
+    function setQuillContent(content) {
+        if (quillEditor) {
+            quillEditor.root.innerHTML = content || '';
+            // Update hidden textarea
+            document.getElementById('chapter-editor-content').value = content || '';
+        }
+    }
+    
+    function updateWordCount() {
+        let content = '';
+        if (quillEditor) {
+            // Get plain text content for word counting
+            content = quillEditor.getText();
+        } else {
+            content = document.getElementById('chapter-editor-content').value;
+        }
+        
+        const words = content.trim() === '' ? 0 : content.trim().split(/\s+/).length;
+        
+        if (mysticEditor) {
+            mysticEditor.currentContent = quillEditor ? quillEditor.root.innerHTML : content;
+        }
+    }
+    
+    function updateAutoSaveStatus(status) {
+        const statusElement = document.getElementById('auto-save-status');
+        if (statusElement) {
+            statusElement.textContent = status;
+        }
+    }
     
     // Check if we should auto-edit a chapter after page reload
     document.addEventListener('DOMContentLoaded', function() {
