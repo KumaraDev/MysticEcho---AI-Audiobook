@@ -19,15 +19,22 @@ def login():
         
         user = User.query.filter_by(username=username).first()
         
-        logging.info(f"Login attempt - User found: {user is not None}")
+        logging.info(f"Login attempt for username: {username}")
+        logging.info(f"User found: {user is not None}")
+        
         if user:
             password_valid = user.check_password(password)
             logging.info(f"Password valid for {username}: {password_valid}")
             
             if password_valid:
+                # Clear any existing session data first
+                session.clear()
+                
+                # Set new session data
                 session['user_id'] = user.id
                 session['username'] = user.username
                 session.permanent = True
+                
                 flash(f'Welcome back, {user.username}!', 'success')
                 logging.info(f"User {username} logged in successfully")
                 return redirect(url_for('dashboard.index'))
