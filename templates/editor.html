@@ -185,11 +185,8 @@
                     </div>
                     
                     <!-- Chapter Content Editor (hidden by default) -->
-                    <div id="chapter-content-editor" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 10;">
-                        <div id="chapter-title-editor-inline" style="display: none;" class="p-3 border-bottom bg-dark">
-                            <input type="text" id="chapter-title-input-inline" class="form-control form-control-lg" placeholder="Chapter Title..." style="font-weight: 600;">
-                        </div>
-                        <textarea id="chapter-editor-content" class="form-control border-0 w-100" style="height: calc(100% - 0px); resize: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Start writing your chapter here..."></textarea>
+                    <div id="chapter-content-editor" style="display: none; height: 600px;">
+                        <textarea id="chapter-editor-content" class="form-control border-0 w-100 h-100" style="resize: none; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Start writing your chapter here..."></textarea>
                     </div>
                 </div>
             </div>
@@ -714,9 +711,18 @@
                 document.getElementById('chapter-editor-indicator').style.display = 'flex';
                 document.getElementById('chapter-title-editor').style.display = 'block';
                 
-                // Hide default message and show chapter editor
-                document.getElementById('default-editor-message').style.display = 'none';
-                document.getElementById('chapter-content-editor').style.display = 'block';
+                // Completely hide default message and show only chapter editor
+                const defaultMessage = document.getElementById('default-editor-message');
+                const chapterEditor = document.getElementById('chapter-content-editor');
+                const titleEditor = document.getElementById('chapter-title-editor');
+                
+                // Hide all default content
+                defaultMessage.style.display = 'none';
+                defaultMessage.style.visibility = 'hidden';
+                
+                // Show chapter editor and title editor
+                chapterEditor.style.display = 'block';
+                titleEditor.style.display = 'block';
                 document.getElementById('chapter-version-history').style.display = 'block';
                 
                 // Load chapter data into editors
@@ -724,14 +730,9 @@
                 document.getElementById('chapter-editor-content').value = data.content || '';
                 document.getElementById('chapter-editor-content').placeholder = 'Write your chapter content here...';
                 
-                // Adjust chapter editor height to fill container
-                const chapterEditor = document.getElementById('chapter-content-editor');
-                const titleEditor = document.getElementById('chapter-title-editor');
-                if (titleEditor && titleEditor.style.display !== 'none') {
-                    document.getElementById('chapter-editor-content').style.height = 'calc(100% - 80px)';
-                } else {
-                    document.getElementById('chapter-editor-content').style.height = '100%';
-                }
+                // Calculate proper height accounting for title editor
+                const titleHeight = titleEditor.offsetHeight || 80;
+                document.getElementById('chapter-editor-content').style.height = `calc(600px - ${titleHeight}px)`;
                 
                 // Initialize the editor for this chapter
                 if (mysticEditor) {
@@ -791,7 +792,9 @@
         document.getElementById('save-btn-text').textContent = 'Save';
         
         // Show default message and hide chapter editor
-        document.getElementById('default-editor-message').style.display = 'flex';
+        const defaultMessage = document.getElementById('default-editor-message');
+        defaultMessage.style.display = 'flex';
+        defaultMessage.style.visibility = 'visible';
         document.getElementById('chapter-content-editor').style.display = 'none';
         document.getElementById('chapter-version-history').style.display = 'none';
         
