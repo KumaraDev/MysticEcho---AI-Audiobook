@@ -759,8 +759,16 @@
         
         // Fetch chapter data
         fetch(`/editor/project/${projectId}/chapter/${chapterId}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
                 // Switch to chapter editing mode
                 document.getElementById('editor-mode-title').textContent = 'Chapter Editor';
                 document.getElementById('current-chapter-title').textContent = data.title;
@@ -820,7 +828,11 @@
             })
             .catch(error => {
                 console.error('Error loading chapter:', error);
-                alert('Failed to load chapter content');
+                alert('Failed to load chapter content: ' + error.message);
+                
+                // Reset to normal mode on error
+                isChapterMode = false;
+                currentChapterId = null;
             });
     }
     
@@ -1262,59 +1274,84 @@
     // Global variables for chapter editing
     let currentChapterId = null;
     let isChapterMode = false;
-    let originalProjectContent = document.getElementById('editor-content').value;
+    let originalProjectContent = '';
+    
+    // Safely get editor content element
+    const editorContentElement = document.getElementById('editor-content');
+    if (editorContentElement) {
+        originalProjectContent = editorContentElement.value;
+    }
     
     // Global Quill.js editor instance
     let quillEditor = null;
     
     function initializeQuillEditor(content = '') {
         const editorElement = document.getElementById('quill-editor');
-        if (!editorElement || quillEditor) return;
-        
-        // Configure Quill.js with custom toolbar
-        quillEditor = new Quill('#quill-editor', {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                    ['blockquote'],
-                    [{ 'align': [] }],
-                    ['clean']
-                ]
-            },
-            placeholder: 'Start writing your chapter here...',
-            scrollingContainer: '#quill-editor'
-        });
-        
-        // Set initial content
-        if (content) {
-            quillEditor.root.innerHTML = content;
+        if (!editorElement) {
+            console.error('Quill editor element not found');
+            return;
         }
         
-        // Listen for content changes
-        quillEditor.on('text-change', function() {
-            // Update hidden textarea for form submission
-            const htmlContent = quillEditor.root.innerHTML;
-            document.getElementById('chapter-editor-content').value = htmlContent;
-            
-            // Update word count
-            updateWordCount();
-            
-            // Schedule auto-save
-            scheduleChapterAutoSave();
-            
-            // Update mystic editor content tracking
-            if (mysticEditor) {
-                mysticEditor.currentContent = htmlContent;
-            }
-        });
+        // Destroy existing editor if it exists
+        if (quillEditor) {
+            quillEditor = null;
+        }
         
-        // Focus the editor
-        setTimeout(() => {
-            quillEditor.focus();
-        }, 100);
+        try {
+            // Configure Quill.js with custom toolbar
+            quillEditor = new Quill('#quill-editor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['blockquote'],
+                        [{ 'align': [] }],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Start writing your chapter here...',
+                scrollingContainer: '#quill-editor'
+            });
+            
+            // Set initial content
+            if (content) {
+                quillEditor.root.innerHTML = content;
+            }
+            
+            // Listen for content changes
+            quillEditor.on('text-change', function() {
+                // Update hidden textarea for form submission
+                const htmlContent = quillEditor.root.innerHTML;
+                const hiddenTextarea = document.getElementById('chapter-editor-content');
+                if (hiddenTextarea) {
+                    hiddenTextarea.value = htmlContent;
+                }
+                
+                // Update word count
+                updateWordCount();
+                
+                // Schedule auto-save
+                scheduleChapterAutoSave();
+                
+                // Update mystic editor content tracking
+                if (mysticEditor) {
+                    mysticEditor.currentContent = htmlContent;
+                }
+            });
+            
+            // Focus the editor
+            setTimeout(() => {
+                if (quillEditor) {
+                    quillEditor.focus();
+                }
+            }, 200);
+            
+            console.log('Quill editor initialized successfully');
+        } catch (error) {
+            console.error('Error initializing Quill editor:', error);
+        }
     }
     
     function getQuillContent() {
