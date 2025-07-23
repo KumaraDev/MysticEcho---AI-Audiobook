@@ -334,8 +334,8 @@
                         Recent Versions
                     </h6>
                 </div>
-                <div class="card-body">
-                    <div id="chapter-versions-list">
+                <div class="card-body p-0">
+                    <div id="chapter-versions-list" style="max-height: 300px; overflow-y: auto;">
                         <div class="text-center text-muted py-3" id="no-versions-message">
                             <i data-feather="file-text" class="mb-2"></i>
                             <p class="mb-0 small">No versions saved yet</p>
@@ -870,7 +870,6 @@
         .then(response => response.json())
         .then(versions => {
             const versionsList = document.getElementById('chapter-versions-list');
-            const noVersionsMessage = document.getElementById('no-versions-message');
             
             if (versions.length === 0) {
                 versionsList.innerHTML = `
@@ -881,10 +880,15 @@
                     </div>
                 `;
             } else {
+                // Sort versions by creation date (most recent first) and limit display
+                const sortedVersions = versions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                const recentVersions = sortedVersions.slice(0, 5);
+                const hasMoreVersions = versions.length > 5;
+                
                 versionsList.innerHTML = `
                     <div class="list-group list-group-flush">
-                        ${versions.map(version => `
-                            <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                        ${recentVersions.map(version => `
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-3 py-2 border-start-0 border-end-0">
                                 <div>
                                     <div class="fw-semibold small">Version ${version.version_number}</div>
                                     <div class="text-muted small">${formatDate(version.created_at)}</div>
@@ -900,6 +904,14 @@
                                 </div>
                             </div>
                         `).join('')}
+                        ${hasMoreVersions ? `
+                            <div class="list-group-item px-3 py-2 border-start-0 border-end-0 bg-transparent">
+                                <button class="btn btn-link btn-sm p-0 text-muted" onclick="showAllVersions(${chapterId})">
+                                    <i data-feather="chevron-down" class="me-1"></i>
+                                    Show ${versions.length - 5} older versions
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             }
@@ -909,6 +921,51 @@
         })
         .catch(error => {
             console.error('Error loading versions:', error);
+        });
+    }
+    
+    function showAllVersions(chapterId) {
+        fetch(`/editor/project/${projectId}/chapter/${chapterId}/versions`)
+        .then(response => response.json())
+        .then(versions => {
+            const versionsList = document.getElementById('chapter-versions-list');
+            
+            // Sort versions by creation date (most recent first)
+            const sortedVersions = versions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            versionsList.innerHTML = `
+                <div class="list-group list-group-flush">
+                    ${sortedVersions.map((version, index) => `
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-3 py-2 border-start-0 border-end-0 ${index >= 5 ? 'bg-light bg-opacity-25' : ''}">
+                            <div>
+                                <div class="fw-semibold small">Version ${version.version_number}</div>
+                                <div class="text-muted small">${formatDate(version.created_at)}</div>
+                                <div class="text-muted small">${version.word_count || 0} words</div>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-info btn-sm" onclick="viewVersionDiff(${version.id})" title="View Changes">
+                                    <i data-feather="eye"></i>
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm" onclick="rollbackToVersion(${version.id})" title="Rollback">
+                                    <i data-feather="rotate-ccw"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                    <div class="list-group-item px-3 py-2 border-start-0 border-end-0 bg-transparent">
+                        <button class="btn btn-link btn-sm p-0 text-muted" onclick="loadChapterVersions(${chapterId})">
+                            <i data-feather="chevron-up" class="me-1"></i>
+                            Show recent only
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Re-render feather icons
+            feather.replace();
+        })
+        .catch(error => {
+            console.error('Error loading all versions:', error);
         });
     }
     
