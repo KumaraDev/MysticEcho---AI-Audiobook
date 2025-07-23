@@ -148,7 +148,30 @@
                             {% if chapters %}
                                 <i data-feather="layers" style="width: 64px; height: 64px;" class="mb-3 text-muted"></i>
                                 <h5 class="text-muted mb-3">Select a chapter to begin editing</h5>
-                                <p class="text-muted">Use the sidebar to choose a chapter for editing</p>
+                                
+                                <!-- Chapter Quick List with Drag and Drop -->
+                                <div class="mb-4" id="chapter-quick-list">
+                                    {% for chapter in chapters %}
+                                    <div class="chapter-item card mb-2" draggable="true" data-chapter-id="{{ chapter.id }}" data-order="{{ chapter.order_index }}">
+                                        <div class="card-body p-3 d-flex justify-content-between align-items-center" style="cursor: pointer;" onclick="editChapterInline({{ chapter.id }})">
+                                            <div class="text-start">
+                                                <div class="fw-semibold text-light">{{ chapter.title }}</div>
+                                                <small class="text-muted">{{ (chapter.content.split()|length) if chapter.content else 0 }} words</small>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i data-feather="move" class="text-muted drag-handle" style="cursor: grab;"></i>
+                                                <i data-feather="edit-3" class="text-muted"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Create New Chapter Option -->
+                                <button class="btn btn-outline-primary" onclick="quickCreateChapter()">
+                                    <i data-feather="plus" class="me-1"></i>
+                                    Create New Chapter
+                                </button>
                             {% else %}
                                 <i data-feather="book-open" style="width: 64px; height: 64px;" class="mb-3 text-muted"></i>
                                 <h5 class="text-muted mb-2">Start organizing your audiobook</h5>
@@ -162,8 +185,8 @@
                     </div>
                     
                     <!-- Chapter Content Editor (hidden by default) -->
-                    <div id="chapter-content-editor" style="display: none;">
-                        <textarea id="chapter-editor-content" class="form-control border-0" style="height: 600px; resize: vertical; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Start writing your chapter here..."></textarea>
+                    <div id="chapter-content-editor" style="display: none; height: 600px;">
+                        <textarea id="chapter-editor-content" class="form-control border-0 h-100" style="resize: vertical; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Start writing your chapter here..."></textarea>
                     </div>
                 </div>
             </div>

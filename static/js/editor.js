@@ -32,9 +32,13 @@ class MysticEditor {
             this.editor = document.getElementById('chapter-editor-content');
         }
         if (this.editor) {
-            this.currentContent = this.editor.value;
+            this.currentContent = this.editor.value || '';
             this.lastSavedContent = this.currentContent;
             this.updateWordCount();
+        } else {
+            // Initialize with empty content if no editor found yet
+            this.currentContent = '';
+            this.lastSavedContent = '';
         }
     }
     
