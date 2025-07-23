@@ -19,7 +19,7 @@ def login():
         
         user = User.query.filter_by(username=username).first()
         
-        logging.info(f"Login attempt for username: {username}")
+        logging.info(f"Login attempt for username: '{username}' (length: {len(username)})")
         logging.info(f"User found: {user is not None}")
         
         if user:
