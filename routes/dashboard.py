@@ -9,11 +9,18 @@ dashboard_bp = Blueprint('dashboard', __name__)
 @dashboard_bp.route('/')
 @login_required
 def index():
+    logging.info("=== DASHBOARD ACCESS START ===")
+    logging.info(f"Request method: {request.method}")
+    logging.info(f"Request URL: {request.url}")
+    
     user_id = session.get('user_id')
     logging.info(f"Dashboard access - user_id from session: {user_id}")
-    logging.info(f"Session data: {dict(session)}")
+    logging.info(f"Full session data: {dict(session)}")
     
     user = User.query.get(user_id)
+    logging.info(f"User query result: {user is not None}")
+    if user:
+        logging.info(f"User details: ID={user.id}, username='{user.username}', email='{user.email}'")
     
     if not user:
         logging.error(f"User not found for user_id: {user_id}")

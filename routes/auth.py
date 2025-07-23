@@ -10,39 +10,71 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        logging.info("=== LOGIN REQUEST START ===")
+        logging.info(f"Request method: {request.method}")
+        logging.info(f"Request form data: {dict(request.form)}")
+        logging.info(f"Request headers: {dict(request.headers)}")
+        
         username = request.form.get('username')
         password = request.form.get('password')
         
+        logging.info(f"Extracted username: '{username}' (type: {type(username)}, length: {len(username) if username else 0})")
+        logging.info(f"Extracted password: {'[PRESENT]' if password else '[MISSING]'} (length: {len(password) if password else 0})")
+        
         if not username or not password:
+            logging.error("Missing username or password")
             flash('Please provide both username and password.', 'error')
             return render_template('login.html')
         
         user = User.query.filter_by(username=username).first()
         
-        logging.info(f"Login attempt for username: '{username}' (length: {len(username)})")
-        logging.info(f"User found: {user is not None}")
-        
+        logging.info(f"Database query result - User found: {user is not None}")
         if user:
+            logging.info(f"Found user: ID={user.id}, username='{user.username}', email='{user.email}'")
+            
             password_valid = user.check_password(password)
-            logging.info(f"Password valid for {username}: {password_valid}")
+            logging.info(f"Password validation result: {password_valid}")
             
             if password_valid:
+                logging.info("Password valid - proceeding with login")
+                
                 # Clear any existing session data first
+                old_session = dict(session)
                 session.clear()
+                logging.info(f"Cleared old session: {old_session}")
                 
                 # Set new session data
                 session['user_id'] = user.id
                 session['username'] = user.username
                 session.permanent = True
                 
+                new_session = dict(session)
+                logging.info(f"Set new session: {new_session}")
+                
                 flash(f'Welcome back, {user.username}!', 'success')
-                logging.info(f"User {username} logged in successfully")
-                logging.info(f"Session data set: user_id={session.get('user_id')}, username={session.get('username')}")
-                return redirect(url_for('dashboard.index'))
+                logging.info(f"User {username} logged in successfully - redirecting to dashboard")
+                
+                redirect_url = url_for('dashboard.index')
+                logging.info(f"Redirect URL: {redirect_url}")
+                
+                response = redirect(redirect_url)
+                logging.info(f"Response created: {response}")
+                logging.info("=== LOGIN REQUEST SUCCESS ===")
+                return response
+            else:
+                logging.warning(f"Password validation failed for user: {username}")
+        else:
+            logging.warning(f"No user found with username: '{username}'")
+            # List all usernames for debugging
+            all_users = User.query.all()
+            usernames = [u.username for u in all_users]
+            logging.info(f"Available usernames: {usernames}")
         
         flash('Invalid username or password.', 'error')
         logging.warning(f"Failed login attempt for username: {username}")
+        logging.info("=== LOGIN REQUEST FAILED ===")
     
+    logging.info("Rendering login.html template")
     return render_template('login.html')
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -214,8 +246,15 @@ def login_required(f):
     
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        logging.info(f"=== LOGIN_REQUIRED CHECK for {f.__name__} ===")
+        logging.info(f"Session contents: {dict(session)}")
+        logging.info(f"'user_id' in session: {'user_id' in session}")
+        
         if 'user_id' not in session:
+            logging.warning("No user_id in session - redirecting to login")
             flash('Please log in to access this page.', 'error')
             return redirect(url_for('auth.login'))
+        
+        logging.info(f"User is authenticated - proceeding to {f.__name__}")
         return f(*args, **kwargs)
     return decorated_function
