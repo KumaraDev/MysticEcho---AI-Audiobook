@@ -159,7 +159,7 @@
                                                 <small class="text-muted">{{ (chapter.content.split()|length) if chapter.content else 0 }} words</small>
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
-                                                <i data-feather="grip-vertical" class="text-muted drag-handle" style="cursor: grab;"></i>
+                                                <i data-feather="move" class="text-muted drag-handle" style="cursor: grab;"></i>
                                                 <i data-feather="edit-3" class="text-muted"></i>
                                             </div>
                                         </div>
@@ -184,8 +184,10 @@
                         </div>
                     </div>
                     
-                    <!-- Main Content Editor (hidden by default) -->
-                    <textarea id="editor-content" class="form-control border-0" style="height: 600px; resize: vertical; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; display: none;" placeholder="Start writing your audiobook here...">{{ project.content or '' }}</textarea>
+                    <!-- Chapter Content Editor (hidden by default) -->
+                    <div id="chapter-content-editor" style="display: none;">
+                        <textarea id="chapter-editor-content" class="form-control border-0" style="height: 600px; resize: vertical; font-family: 'Georgia', serif; font-size: 16px; line-height: 1.6; padding: 24px;" placeholder="Start writing your chapter here..."></textarea>
+                    </div>
                 </div>
             </div>
         </div>
@@ -321,8 +323,8 @@
                 </div>
             </div>
 
-            <!-- Version History -->
-            <div class="card border-0">
+            <!-- Chapter Version History (only visible when editing a chapter) -->
+            <div class="card border-0" id="chapter-version-history" style="display: none;">
                 <div class="card-header bg-transparent border-0 pb-2">
                     <h6 class="mb-0">
                         <i data-feather="clock" class="me-2"></i>
@@ -330,27 +332,13 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    {% if versions %}
-                        <div class="list-group list-group-flush">
-                            {% for version in versions %}
-                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <div>
-                                    <small class="fw-semibold">Version {{ version.version_number }}</small>
-                                    <br>
-                                    <small class="text-muted">{{ version.created_at.strftime('%b %d, %Y at %I:%M %p') }}</small>
-                                </div>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="loadVersion({{ version.id }})">
-                                    Load
-                                </button>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="text-center text-muted py-3">
+                    <div id="chapter-versions-list">
+                        <div class="text-center text-muted py-3" id="no-versions-message">
                             <i data-feather="file-text" class="mb-2"></i>
                             <p class="mb-0 small">No versions saved yet</p>
+                            <p class="mb-0 small text-muted">Versions are created automatically when you edit</p>
                         </div>
-                    {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -723,14 +711,15 @@
                 document.getElementById('chapter-editor-indicator').style.display = 'flex';
                 document.getElementById('chapter-title-editor').style.display = 'block';
                 
-                // Hide default message and show editor
+                // Hide default message and show chapter editor
                 document.getElementById('default-editor-message').style.display = 'none';
-                document.getElementById('editor-content').style.display = 'block';
+                document.getElementById('chapter-content-editor').style.display = 'block';
+                document.getElementById('chapter-version-history').style.display = 'block';
                 
                 // Load chapter data into editors
                 document.getElementById('chapter-title-input').value = data.title;
-                document.getElementById('editor-content').value = data.content;
-                document.getElementById('editor-content').placeholder = 'Write your chapter content here...';
+                document.getElementById('chapter-editor-content').value = data.content;
+                document.getElementById('chapter-editor-content').placeholder = 'Write your chapter content here...';
                 
                 // Update save button text
                 document.getElementById('save-btn-text').textContent = 'Save Chapter';
@@ -744,7 +733,8 @@
                     '<i data-feather="zap" style="width: 48px; height: 48px;" class="mb-3"></i>' +
                     '<p class="mb-0">Select text and click an AI button to get suggestions</p>';
                 
-                // Auto-save chapter content on changes
+                // Load version history and setup auto-save
+                loadChapterVersions(chapterId);
                 setupChapterAutoSave();
                 
                 feather.replace(); // Re-render feather icons
@@ -780,9 +770,10 @@
         document.getElementById('chapter-title-editor').style.display = 'none';
         document.getElementById('save-btn-text').textContent = 'Save';
         
-        // Show default message and hide editor
+        // Show default message and hide chapter editor
         document.getElementById('default-editor-message').style.display = 'flex';
-        document.getElementById('editor-content').style.display = 'none';
+        document.getElementById('chapter-content-editor').style.display = 'none';
+        document.getElementById('chapter-version-history').style.display = 'none';
         
         // Disable AI buttons and save button
         disableAIButtons();
@@ -806,7 +797,7 @@
         }
         
         const title = document.getElementById('chapter-title-input').value.trim();
-        const content = document.getElementById('editor-content').value;
+        const content = document.getElementById('chapter-editor-content').value;
         
         if (!title) {
             alert('Please enter a chapter title');
@@ -834,9 +825,249 @@
     }
     
     let chapterAutoSaveInterval = null;
+    let chapterAutoSaveTimeout = null;
+    let isChapterAutoSaving = false;
+    
+    function loadChapterVersions(chapterId) {
+        fetch(`/editor/project/${projectId}/chapter/${chapterId}/versions`)
+        .then(response => response.json())
+        .then(versions => {
+            const versionsList = document.getElementById('chapter-versions-list');
+            const noVersionsMessage = document.getElementById('no-versions-message');
+            
+            if (versions.length === 0) {
+                versionsList.innerHTML = `
+                    <div class="text-center text-muted py-3" id="no-versions-message">
+                        <i data-feather="file-text" class="mb-2"></i>
+                        <p class="mb-0 small">No versions saved yet</p>
+                        <p class="mb-0 small text-muted">Versions are created automatically when you edit</p>
+                    </div>
+                `;
+            } else {
+                versionsList.innerHTML = `
+                    <div class="list-group list-group-flush">
+                        ${versions.map(version => `
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                <div>
+                                    <div class="fw-semibold small">Version ${version.version_number}</div>
+                                    <div class="text-muted small">${formatDate(version.created_at)}</div>
+                                    <div class="text-muted small">${version.word_count || 0} words</div>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-info btn-sm" onclick="viewVersionDiff(${version.id})" title="View Changes">
+                                        <i data-feather="eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="rollbackToVersion(${version.id})" title="Rollback">
+                                        <i data-feather="rotate-ccw"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            // Re-render feather icons
+            feather.replace();
+        })
+        .catch(error => {
+            console.error('Error loading versions:', error);
+        });
+    }
+    
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+        });
+    }
+    
+    function viewVersionDiff(versionId) {
+        fetch(`/editor/project/${projectId}/version/${versionId}/diff`)
+        .then(response => response.json())
+        .then(data => {
+            // Create and show diff modal
+            const diffModal = new bootstrap.Modal(document.getElementById('versionDiffModal') || createDiffModal());
+            document.getElementById('diff-content').innerHTML = data.diff_html || '<p class="text-muted">No changes to display</p>';
+            document.getElementById('diff-version-info').textContent = `Version ${data.version_number} - ${formatDate(data.created_at)}`;
+            diffModal.show();
+        })
+        .catch(error => {
+            console.error('Error loading diff:', error);
+            alert('Failed to load version differences');
+        });
+    }
+    
+    function rollbackToVersion(versionId) {
+        if (!confirm('Are you sure you want to rollback to this version? Your current changes will be lost.')) {
+            return;
+        }
+        
+        fetch(`/editor/project/${projectId}/chapter/${currentChapterId}/rollback/${versionId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the chapter content
+                document.getElementById('chapter-title-input').value = data.title;
+                document.getElementById('chapter-editor-content').value = data.content;
+                
+                // Refresh version history
+                loadChapterVersions(currentChapterId);
+                
+                // Show success message
+                updateAutoSaveStatus('Rollback successful');
+                setTimeout(() => updateAutoSaveStatus(''), 3000);
+            } else {
+                alert(data.error || 'Failed to rollback to version');
+            }
+        })
+        .catch(error => {
+            console.error('Error rolling back:', error);
+            alert('Failed to rollback to version');
+        });
+    }
+    
+    function createDiffModal() {
+        const modalHtml = `
+            <div class="modal fade" id="versionDiffModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i data-feather="eye" class="me-2"></i>
+                                Version Changes
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <small class="text-muted" id="diff-version-info"></small>
+                            </div>
+                            <div id="diff-content" style="font-family: monospace; white-space: pre-wrap;"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        feather.replace();
+        return document.getElementById('versionDiffModal');
+    }
+    
+    function updateAutoSaveStatus(message) {
+        // Update both possible auto-save status elements
+        const editorStatus = document.getElementById('auto-save-status');
+        const chapterStatus = document.getElementById('chapter-auto-save-status');
+        
+        if (editorStatus) editorStatus.textContent = message;
+        if (chapterStatus) chapterStatus.textContent = message;
+    }
     
     function setupChapterAutoSave() {
         clearChapterAutoSave();
+        
+        const titleInput = document.getElementById('chapter-title-input');
+        const contentTextarea = document.getElementById('chapter-editor-content');
+        
+        // Auto-save on title change
+        titleInput.addEventListener('input', function() {
+            scheduleChapterAutoSave();
+        });
+        
+        // Auto-save on content change
+        contentTextarea.addEventListener('input', function() {
+            scheduleChapterAutoSave();
+            updateWordCount();
+        });
+    }
+    
+    function scheduleChapterAutoSave() {
+        // Clear existing timeout
+        if (chapterAutoSaveTimeout) {
+            clearTimeout(chapterAutoSaveTimeout);
+        }
+        
+        // Schedule auto-save after 3 seconds of inactivity
+        chapterAutoSaveTimeout = setTimeout(() => {
+            performChapterAutoSave();
+        }, 3000);
+    }
+    
+    function performChapterAutoSave() {
+        if (!currentChapterId || isChapterAutoSaving) return;
+        
+        const title = document.getElementById('chapter-title-input').value;
+        const content = document.getElementById('chapter-editor-content').value;
+        
+        isChapterAutoSaving = true;
+        updateAutoSaveStatus('Saving...');
+        
+        fetch(`/editor/project/${projectId}/chapter/${currentChapterId}/auto-save`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: title,
+                content: content
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateAutoSaveStatus('Saved');
+                
+                // Update the chapter title in the indicator
+                if (title) {
+                    document.getElementById('current-chapter-title').textContent = title;
+                }
+                
+                // Refresh version history if a new version was created
+                if (data.new_version) {
+                    loadChapterVersions(currentChapterId);
+                }
+                
+                setTimeout(() => {
+                    updateAutoSaveStatus('');
+                }, 2000);
+            } else {
+                updateAutoSaveStatus('Save failed');
+                setTimeout(() => {
+                    updateAutoSaveStatus('');
+                }, 3000);
+            }
+        })
+        .catch(error => {
+            console.error('Auto-save error:', error);
+            updateAutoSaveStatus('Save failed');
+            setTimeout(() => {
+                updateAutoSaveStatus('');
+            }, 3000);
+        })
+        .finally(() => {
+            isChapterAutoSaving = false;
+        });
+    }
+    
+    function clearChapterAutoSave() {
+        if (chapterAutoSaveInterval) {
+            clearInterval(chapterAutoSaveInterval);
+            chapterAutoSaveInterval = null;
+        }
+        if (chapterAutoSaveTimeout) {
+            clearTimeout(chapterAutoSaveTimeout);
+            chapterAutoSaveTimeout = null;
+        }
         
         // Auto-save every 10 seconds when in chapter mode
         chapterAutoSaveInterval = setInterval(() => {

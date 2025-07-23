@@ -7,6 +7,7 @@ from services.storage_service import save_project_backup
 from services.pdf_service import extract_text_from_pdf
 import logging
 import os
+from datetime import datetime
 
 editor_bp = Blueprint('editor', __name__)
 
@@ -111,12 +112,11 @@ def create_chapter(project_id):
         # Get the next order index
         max_order = db.session.query(db.func.max(Chapter.order_index)).filter_by(project_id=project_id).scalar() or 0
         
-        chapter = Chapter(
-            project_id=project_id,
-            title=title,
-            content='',
-            order_index=max_order + 1
-        )
+        chapter = Chapter()
+        chapter.project_id = project_id
+        chapter.title = title
+        chapter.content = ''
+        chapter.order_index = max_order + 1
         
         db.session.add(chapter)
         db.session.commit()
@@ -295,6 +295,219 @@ def reorder_chapters(project_id):
         db.session.rollback()
         logging.error(f"Reorder chapters error: {e}")
         return jsonify({'error': 'Failed to reorder chapters'}), 500
+
+@editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>/auto-save', methods=['POST'])
+@login_required
+def auto_save_chapter(project_id, chapter_id):
+    """Auto-save chapter content and create versions"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    chapter = Chapter.query.filter_by(id=chapter_id, project_id=project_id).first()
+    if not chapter:
+        return jsonify({'error': 'Chapter not found'}), 404
+    
+    data = request.get_json()
+    title = data.get('title', '').strip()
+    content = data.get('content', '')
+    
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+    
+    try:
+        # Check if content has significantly changed to create a new version
+        content_changed = chapter.content != content
+        title_changed = chapter.title != title
+        should_create_version = content_changed or title_changed
+        
+        # Update chapter
+        chapter.title = title
+        chapter.content = content
+        chapter.updated_at = datetime.now()
+        
+        new_version_created = False
+        
+        # Create new version if content changed significantly
+        if should_create_version:
+            # Get the latest version number
+            latest_version = ProjectVersion.query.filter_by(
+                project_id=project_id, 
+                chapter_id=chapter_id
+            ).order_by(ProjectVersion.version_number.desc()).first()
+            
+            next_version_number = (latest_version.version_number + 1) if latest_version else 1
+            
+            # Create new version
+            new_version = ProjectVersion()
+            new_version.project_id = project_id
+            new_version.chapter_id = chapter_id
+            new_version.version_number = next_version_number
+            new_version.title = title
+            new_version.content = content
+            new_version.word_count = len(content.split()) if content else 0
+            new_version.created_at = datetime.now()
+            
+            db.session.add(new_version)
+            new_version_created = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'new_version': new_version_created,
+            'word_count': len(content.split()) if content else 0
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Auto-save chapter error: {e}")
+        return jsonify({'error': 'Failed to auto-save chapter'}), 500
+
+@editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>/versions', methods=['GET'])
+@login_required
+def get_chapter_versions(project_id, chapter_id):
+    """Get version history for a chapter"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    chapter = Chapter.query.filter_by(id=chapter_id, project_id=project_id).first()
+    if not chapter:
+        return jsonify({'error': 'Chapter not found'}), 404
+    
+    try:
+        versions = ProjectVersion.query.filter_by(
+            project_id=project_id,
+            chapter_id=chapter_id
+        ).order_by(ProjectVersion.created_at.desc()).limit(10).all()
+        
+        versions_data = []
+        for version in versions:
+            versions_data.append({
+                'id': version.id,
+                'version_number': version.version_number,
+                'created_at': version.created_at.isoformat(),
+                'word_count': version.word_count
+            })
+        
+        return jsonify(versions_data)
+        
+    except Exception as e:
+        logging.error(f"Get chapter versions error: {e}")
+        return jsonify({'error': 'Failed to load versions'}), 500
+
+@editor_bp.route('/project/<int:project_id>/version/<int:version_id>/diff', methods=['GET'])
+@login_required
+def get_version_diff(project_id, version_id):
+    """Get diff between version and current content"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    version = ProjectVersion.query.filter_by(id=version_id, project_id=project_id).first()
+    if not version:
+        return jsonify({'error': 'Version not found'}), 404
+    
+    try:
+        # Get current chapter content
+        chapter = Chapter.query.filter_by(id=version.chapter_id, project_id=project_id).first()
+        current_content = chapter.content if chapter else ""
+        version_content = version.content or ""
+        
+        # Simple diff implementation
+        diff_html = create_simple_diff(version_content, current_content)
+        
+        return jsonify({
+            'version_number': version.version_number,
+            'created_at': version.created_at.isoformat(),
+            'diff_html': diff_html
+        })
+        
+    except Exception as e:
+        logging.error(f"Get version diff error: {e}")
+        return jsonify({'error': 'Failed to generate diff'}), 500
+
+@editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>/rollback/<int:version_id>', methods=['POST'])
+@login_required
+def rollback_to_version(project_id, chapter_id, version_id):
+    """Rollback chapter to a specific version"""
+    user_id = session.get('user_id')
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    chapter = Chapter.query.filter_by(id=chapter_id, project_id=project_id).first()
+    if not chapter:
+        return jsonify({'error': 'Chapter not found'}), 404
+    
+    version = ProjectVersion.query.filter_by(id=version_id, project_id=project_id, chapter_id=chapter_id).first()
+    if not version:
+        return jsonify({'error': 'Version not found'}), 404
+    
+    try:
+        # Update chapter with version content
+        chapter.title = version.title
+        chapter.content = version.content
+        chapter.updated_at = datetime.now()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'title': version.title,
+            'content': version.content
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Rollback to version error: {e}")
+        return jsonify({'error': 'Failed to rollback to version'}), 500
+
+def create_simple_diff(old_text, new_text):
+    """Create a simple HTML diff view"""
+    if old_text == new_text:
+        return '<p class="text-muted">No changes detected</p>'
+    
+    old_lines = old_text.split('\n') if old_text else []
+    new_lines = new_text.split('\n') if new_text else []
+    
+    diff_html = '<div class="diff-container">'
+    
+    max_lines = max(len(old_lines), len(new_lines))
+    
+    for i in range(max_lines):
+        old_line = old_lines[i] if i < len(old_lines) else ''
+        new_line = new_lines[i] if i < len(new_lines) else ''
+        
+        if old_line == new_line:
+            diff_html += f'<div class="diff-line unchanged">{old_line}</div>'
+        else:
+            if old_line:
+                diff_html += f'<div class="diff-line removed">- {old_line}</div>'
+            if new_line:
+                diff_html += f'<div class="diff-line added">+ {new_line}</div>'
+    
+    diff_html += '</div>'
+    
+    diff_html += '''
+    <style>
+    .diff-container { font-family: monospace; }
+    .diff-line { padding: 2px 8px; margin: 1px 0; }
+    .diff-line.removed { background-color: #ffebee; color: #c62828; }
+    .diff-line.added { background-color: #e8f5e8; color: #2e7d32; }
+    .diff-line.unchanged { color: #666; }
+    </style>
+    '''
+    
+    return diff_html
     
     data = request.get_json()
     chapter_order = data.get('chapter_order', [])
@@ -438,9 +651,10 @@ def update_status(project_id):
         project.status = new_status
         db.session.commit()
         
+        status_display = new_status.replace("_", " ").title() if new_status else "Unknown"
         return jsonify({
             'success': True,
-            'message': f'Project status updated to {new_status.replace("_", " ").title()}'
+            'message': f'Project status updated to {status_display}'
         })
         
     except Exception as e:

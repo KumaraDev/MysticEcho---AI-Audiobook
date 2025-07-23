@@ -47,12 +47,16 @@ class ProjectVersion(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    chapter_id = db.Column(db.Integer, db.ForeignKey('chapters.id'), nullable=True)  # For chapter-specific versions
+    title = db.Column(db.String(200))  # Chapter title at time of version
     content = db.Column(db.Text, nullable=False)
     version_number = db.Column(db.Integer, nullable=False)
+    word_count = db.Column(db.Integer, default=0)  # Track word count
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     notes = db.Column(db.Text)
     
     project = db.relationship('Project', backref='versions')
+    chapter = db.relationship('Chapter', backref='versions')
     
     def __repr__(self):
         return f'<ProjectVersion {self.project_id}:{self.version_number}>'
