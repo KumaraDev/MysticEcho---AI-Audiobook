@@ -19,16 +19,21 @@ def login():
         
         user = User.query.filter_by(username=username).first()
         
-        if user and user.check_password(password):
-            session['user_id'] = user.id
-            session['username'] = user.username
-            session.permanent = True
-            flash(f'Welcome back, {user.username}!', 'success')
-            logging.info(f"User {username} logged in successfully")
-            return redirect(url_for('dashboard.index'))
-        else:
-            flash('Invalid username or password.', 'error')
-            logging.warning(f"Failed login attempt for username: {username}")
+        logging.info(f"Login attempt - User found: {user is not None}")
+        if user:
+            password_valid = user.check_password(password)
+            logging.info(f"Password valid for {username}: {password_valid}")
+            
+            if password_valid:
+                session['user_id'] = user.id
+                session['username'] = user.username
+                session.permanent = True
+                flash(f'Welcome back, {user.username}!', 'success')
+                logging.info(f"User {username} logged in successfully")
+                return redirect(url_for('dashboard.index'))
+        
+        flash('Invalid username or password.', 'error')
+        logging.warning(f"Failed login attempt for username: {username}")
     
     return render_template('login.html')
 
@@ -102,11 +107,14 @@ def forgot_password():
     """Handle forgot password requests"""
     email = request.form.get('email')
     
+    logging.info(f"Password reset request for email: {email}")
+    
     if not email:
         flash('Please enter your email address.', 'error')
         return redirect(url_for('auth.login'))
     
     user = User.query.filter_by(email=email).first()
+    logging.info(f"User found for email {email}: {user is not None}")
     
     if user:
         try:
@@ -115,8 +123,13 @@ def forgot_password():
             db.session.add(reset_token)
             db.session.commit()
             
+            logging.info(f"Created reset token: {reset_token.token[:8]}... for user {user.username}")
+            
             # Send reset email
-            if send_password_reset_email(user.email, user.username, reset_token.token):
+            email_sent = send_password_reset_email(user.email, user.username, reset_token.token)
+            logging.info(f"Email send result: {email_sent}")
+            
+            if email_sent:
                 flash('Password reset instructions have been sent to your email.', 'success')
                 logging.info(f"Password reset email sent to {email}")
             else:

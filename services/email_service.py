@@ -11,6 +11,7 @@ def send_password_reset_email(user_email, user_name, reset_token):
             logging.error("SendGrid API key not found")
             return False
         
+        logging.info(f"Attempting to send password reset email to {user_email}")
         sg = SendGridAPIClient(sendgrid_key)
         
         # Create reset URL - using the domain from the request
@@ -87,7 +88,7 @@ def send_password_reset_email(user_email, user_name, reset_token):
         
         response = sg.send(message)
         logging.info(f"Password reset email sent to {user_email}, status: {response.status_code}")
-        return True
+        return response.status_code == 202
         
     except Exception as e:
         logging.error(f"Failed to send password reset email: {e}")
