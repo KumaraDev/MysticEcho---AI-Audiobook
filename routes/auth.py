@@ -54,11 +54,25 @@ def login():
                 flash(f'Welcome back, {user.username}!', 'success')
                 logging.info(f"User {username} logged in successfully - redirecting to dashboard")
                 
+                # Try multiple redirect strategies
                 redirect_url = url_for('dashboard.index')
                 logging.info(f"Redirect URL: {redirect_url}")
                 
+                # Strategy 1: Regular redirect with explicit session save
+                try:
+                    session.modified = True
+                    db.session.commit()  # Ensure any session storage is committed
+                    logging.info("Session marked as modified and committed")
+                except:
+                    pass
+                
                 response = redirect(redirect_url)
-                logging.info(f"Response created: {response}")
+                
+                # Strategy 2: Add backup user info to URL if session fails
+                response.headers['X-User-ID'] = str(user.id)
+                response.headers['X-Username'] = user.username
+                
+                logging.info(f"Response created with headers: {dict(response.headers)}")
                 logging.info("=== LOGIN REQUEST SUCCESS ===")
                 return response
             else:

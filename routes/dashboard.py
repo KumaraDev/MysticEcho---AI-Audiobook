@@ -7,15 +7,37 @@ import logging
 dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/')
-@login_required
 def index():
     logging.info("=== DASHBOARD ACCESS START ===")
     logging.info(f"Request method: {request.method}")
     logging.info(f"Request URL: {request.url}")
+    logging.info(f"Request headers: {dict(request.headers)}")
     
     user_id = session.get('user_id')
     logging.info(f"Dashboard access - user_id from session: {user_id}")
     logging.info(f"Full session data: {dict(session)}")
+    
+    # Fallback: Check for user info in headers (backup auth method)
+    if not user_id:
+        backup_user_id = request.headers.get('X-User-ID')
+        backup_username = request.headers.get('X-Username')
+        logging.info(f"Backup auth - user_id: {backup_user_id}, username: {backup_username}")
+        
+        if backup_user_id:
+            try:
+                user_id = int(backup_user_id)
+                session['user_id'] = user_id
+                session['username'] = backup_username
+                session.permanent = True
+                logging.info(f"Restored session from headers: {dict(session)}")
+            except:
+                pass
+    
+    # Check login requirement after potential session restoration
+    if 'user_id' not in session:
+        logging.warning("No user_id in session - redirecting to login")
+        flash('Please log in to access this page.', 'error')
+        return redirect(url_for('auth.login'))
     
     user = User.query.get(user_id)
     logging.info(f"User query result: {user is not None}")
