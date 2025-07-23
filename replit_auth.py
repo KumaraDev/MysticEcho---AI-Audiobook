@@ -1,6 +1,7 @@
 import jwt
 import os
 import uuid
+import logging
 from functools import wraps
 from urllib.parse import urlencode
 
@@ -140,14 +141,21 @@ def save_user(user_claims):
 
 @oauth_authorized.connect
 def logged_in(blueprint, token):
-    user_claims = jwt.decode(token['id_token'],
-                             options={"verify_signature": False})
-    user = save_user(user_claims)
-    login_user(user)
-    blueprint.token = token
-    next_url = session.pop("next_url", None)
-    if next_url is not None:
-        return redirect(next_url)
+    try:
+        user_claims = jwt.decode(token['id_token'],
+                                 options={"verify_signature": False})
+        user = save_user(user_claims)
+        login_user(user)
+        blueprint.token = token
+        
+        next_url = session.pop("next_url", None)
+        if next_url is not None:
+            return redirect(next_url)
+        else:
+            return redirect(url_for('dashboard_home'))
+    except Exception as e:
+        logging.error(f"OAuth login error: {e}")
+        return redirect(url_for('replit_auth.error'))
 
 
 @oauth_error.connect
@@ -156,25 +164,26 @@ def handle_error(blueprint, error, error_description=None, error_uri=None):
 
 
 def require_login(f):
-
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             session["next_url"] = get_next_navigation_url(request)
             return redirect(url_for('replit_auth.login'))
 
+        # Check token expiration and refresh if needed
         try:
+            issuer_url = os.environ.get('ISSUER_URL', "https://replit.com/oidc")
             expires_in = replit.token.get('expires_in', 0)
             if expires_in < 0:
                 refresh_token_url = issuer_url + "/token"
                 try:
                     token = replit.refresh_token(token_url=refresh_token_url,
                                                  client_id=os.environ['REPL_ID'])
+                    replit.token_updater(token)
                 except InvalidGrantError:
-                    # If the refresh token is invalid, the users needs to re-login.
+                    # If the refresh token is invalid, the user needs to re-login.
                     session["next_url"] = get_next_navigation_url(request)
                     return redirect(url_for('replit_auth.login'))
-                replit.token_updater(token)
         except:
             # If token check fails, just proceed - user might be newly authenticated
             pass
