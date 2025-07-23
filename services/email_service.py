@@ -14,9 +14,17 @@ def send_password_reset_email(user_email, user_name, reset_token):
         logging.info(f"Attempting to send password reset email to {user_email}")
         sg = SendGridAPIClient(sendgrid_key)
         
-        # Create reset URL - using the domain from the request
-        from flask import request
-        reset_url = f"{request.url_root}auth/reset-password/{reset_token}"
+        # Create reset URL - get base URL from environment or use localhost
+        from flask import has_request_context, request
+        if has_request_context():
+            base_url = request.url_root
+        else:
+            # Fallback when outside request context
+            base_url = os.environ.get('APP_BASE_URL', 'http://localhost:5000/')
+            if not base_url.endswith('/'):
+                base_url += '/'
+        
+        reset_url = f"{base_url}auth/reset-password/{reset_token}"
         
         # Email content
         subject = "Password Reset - Mystic Echo"
@@ -78,8 +86,12 @@ def send_password_reset_email(user_email, user_name, reset_token):
         © 2025 Mystic Echo
         """
         
+        # Use a verified sender identity - typically the same email used to create SendGrid account
+        # For testing, we'll use a basic email format that SendGrid accepts
+        sender_email = os.environ.get('SENDGRID_SENDER_EMAIL', 'noreply@gmail.com')
+        
         message = Mail(
-            from_email=Email("noreply@mysticecho.app", "Mystic Echo"),
+            from_email=Email(sender_email, "Mystic Echo"),
             to_emails=To(user_email),
             subject=subject,
             html_content=Content("text/html", html_content),
@@ -138,8 +150,11 @@ def send_welcome_email(user_email, user_name):
         </div>
         """
         
+        # Use a verified sender identity - typically the same email used to create SendGrid account
+        sender_email = os.environ.get('SENDGRID_SENDER_EMAIL', 'noreply@gmail.com')
+        
         message = Mail(
-            from_email=Email("noreply@mysticecho.app", "Mystic Echo"),
+            from_email=Email(sender_email, "Mystic Echo"),
             to_emails=To(user_email),
             subject=subject,
             html_content=Content("text/html", html_content)

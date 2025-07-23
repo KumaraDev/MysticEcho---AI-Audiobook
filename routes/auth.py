@@ -126,8 +126,12 @@ def forgot_password():
             logging.info(f"Created reset token: {reset_token.token[:8]}... for user {user.username}")
             
             # Send reset email
-            email_sent = send_password_reset_email(user.email, user.username, reset_token.token)
-            logging.info(f"Email send result: {email_sent}")
+            try:
+                email_sent = send_password_reset_email(user.email, user.username, reset_token.token)
+                logging.info(f"Email send result: {email_sent}")
+            except Exception as email_error:
+                logging.error(f"Email sending failed with error: {email_error}")
+                email_sent = False
             
             if email_sent:
                 flash('Password reset instructions have been sent to your email.', 'success')
