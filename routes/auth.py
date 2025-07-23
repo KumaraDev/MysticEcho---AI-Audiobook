@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash
-from models import User
+from models import User, PasswordResetToken
 from app import db
+from services.email_service import send_password_reset_email, send_welcome_email
 import logging
 
 auth_bp = Blueprint('auth', __name__)
@@ -74,6 +75,9 @@ def register():
             session['username'] = user.username
             session.permanent = True
             
+            # Send welcome email
+            send_welcome_email(user.email, user.username)
+            
             flash(f'Account created successfully! Welcome, {user.username}!', 'success')
             logging.info(f"New user registered: {username}")
             return redirect(url_for('dashboard.index'))
@@ -92,6 +96,92 @@ def logout():
     flash('You have been logged out successfully.', 'info')
     logging.info(f"User {username} logged out")
     return redirect(url_for('index'))
+
+@auth_bp.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    """Handle forgot password requests"""
+    email = request.form.get('email')
+    
+    if not email:
+        flash('Please enter your email address.', 'error')
+        return redirect(url_for('auth.login'))
+    
+    user = User.query.filter_by(email=email).first()
+    
+    if user:
+        try:
+            # Create password reset token
+            reset_token = PasswordResetToken(user_id=user.id)
+            db.session.add(reset_token)
+            db.session.commit()
+            
+            # Send reset email
+            if send_password_reset_email(user.email, user.username, reset_token.token):
+                flash('Password reset instructions have been sent to your email.', 'success')
+                logging.info(f"Password reset email sent to {email}")
+            else:
+                flash('Failed to send reset email. Please try again later.', 'error')
+                logging.error(f"Failed to send password reset email to {email}")
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred. Please try again later.', 'error')
+            logging.error(f"Password reset error: {e}")
+    else:
+        # Don't reveal if email exists or not for security
+        flash('If an account with that email exists, password reset instructions have been sent.', 'info')
+        logging.warning(f"Password reset requested for non-existent email: {email}")
+    
+    return redirect(url_for('auth.login'))
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Handle password reset with token"""
+    reset_token = PasswordResetToken.query.filter_by(token=token).first()
+    
+    if not reset_token or not reset_token.is_valid():
+        flash('Invalid or expired reset link. Please request a new one.', 'error')
+        return redirect(url_for('auth.login'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not password or not confirm_password:
+            flash('Please fill in all fields.', 'error')
+            return render_template('reset_password.html', token=token)
+        
+        if password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return render_template('reset_password.html', token=token)
+        
+        if len(password) < 6:
+            flash('Password must be at least 6 characters long.', 'error')
+            return render_template('reset_password.html', token=token)
+        
+        try:
+            # Update user password
+            user = User.query.get(reset_token.user_id)
+            if user:
+                user.set_password(password)
+                
+                # Mark token as used
+                reset_token.mark_used()
+                
+                db.session.commit()
+                
+                flash('Password successfully reset! You can now log in with your new password.', 'success')
+                logging.info(f"Password reset completed for user {user.username}")
+                return redirect(url_for('auth.login'))
+            else:
+                flash('Invalid reset token.', 'error')
+                return redirect(url_for('auth.login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while resetting your password. Please try again.', 'error')
+            logging.error(f"Password reset completion error: {e}")
+    
+    return render_template('reset_password.html', token=token)
 
 def login_required(f):
     """Decorator to require login for routes"""
