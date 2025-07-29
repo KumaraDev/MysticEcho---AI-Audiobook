@@ -19,14 +19,14 @@ def generate_audio(project_id):
         
         if not project:
             flash('Project not found', 'error')
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('dashboard.index'))
         
         return render_template('audio/generate.html', project=project)
         
     except Exception as e:
         logging.error(f"Error loading audio generation page: {e}")
         flash('Error loading audio generation page', 'error')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.index'))
 
 @audio_bp.route('/generate_tts/<int:project_id>', methods=['POST'])
 @require_login
