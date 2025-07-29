@@ -38,13 +38,17 @@ def dashboard_home():
     in_progress_projects = len([p for p in projects if p.status == 'in_progress'])
     completed_projects = len([p for p in projects if p.status == 'completed'])
     
+    stats = {
+        'total': total_projects,
+        'draft': draft_projects,
+        'in_progress': in_progress_projects,
+        'completed': completed_projects
+    }
+    
     return render_template('dashboard.html', 
                          user=user,
                          projects=projects,
-                         total_projects=total_projects,
-                         draft_projects=draft_projects,
-                         in_progress_projects=in_progress_projects,
-                         completed_projects=completed_projects)
+                         stats=stats)
 
 # Register blueprints
 try:
