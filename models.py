@@ -49,11 +49,17 @@ class Project(db.Model):
     user_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)  # Changed to String
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    status = db.Column(db.String(20), default='draft')  # draft, in_progress, completed
+    status = db.Column(db.String(20), default='draft')  # draft, in_progress, completed, generating_audio, audio_generated
     
     # Storage and file information
     storage_path = db.Column(db.String(500))  # S3/Wasabi path
     original_filename = db.Column(db.String(200))
+    
+    # Audio-related fields
+    audio_url = db.Column(db.String(500))  # URL to generated audio file
+    audio_voice = db.Column(db.String(20), default='alloy')  # TTS voice used
+    audio_duration = db.Column(db.Float)  # Duration in minutes
+    audio_generated_at = db.Column(db.DateTime)  # When audio was generated
     
     def __repr__(self):
         return f'<Project {self.title}>'
