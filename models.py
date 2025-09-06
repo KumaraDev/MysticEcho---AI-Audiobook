@@ -1,41 +1,70 @@
 from datetime import datetime
 
 from app import db
-from flask_dance.consumer.storage.sqla import OAuthConsumerMixin
-from flask_login import UserMixin
+from flask_security import UserMixin, RoleMixin
 from sqlalchemy import UniqueConstraint
 
 
-# (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+# Flask-Security-Too User Model
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
-    id = db.Column(db.String, primary_key=True)
-    email = db.Column(db.String, unique=True, nullable=True)
-    first_name = db.Column(db.String, nullable=True)
-    last_name = db.Column(db.String, nullable=True)
-    profile_image_url = db.Column(db.String, nullable=True)
-
-    created_at = db.Column(db.DateTime, default=datetime.now)
-    updated_at = db.Column(db.DateTime,
-                           default=datetime.now,
-                           onupdate=datetime.now)
     
-    # Relationships - update foreign key to use String
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)  # Flask-Security-Too expects 'password' field
+    active = db.Column(db.Boolean(), default=True)
+    confirmed_at = db.Column(db.DateTime())
+    fs_uniquifier = db.Column(db.String(64), nullable=False, unique=True)  # Flask-Security-Too required field
+    
+    # Keep existing fields for backward compatibility
+    first_name = db.Column(db.String(255), nullable=True)
+    last_name = db.Column(db.String(255), nullable=True)
+    profile_image_url = db.Column(db.String(500), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Flask-Security-Too relationships
+    roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'))
+    
+    # Existing relationships
     projects = db.relationship('Project', backref='user', lazy=True, cascade='all, delete-orphan')
+    
+    # Flask-Security-Too required methods
+    def get_id(self):
+        return str(self.id)
+    
+    def has_role(self, role_name):
+        return any(role.name == role_name for role in self.roles)
 
 
-# (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
-class OAuth(OAuthConsumerMixin, db.Model):
-    user_id = db.Column(db.String, db.ForeignKey(User.id))
-    browser_session_key = db.Column(db.String, nullable=False)
-    user = db.relationship(User)
+# Flask-Security-Too Role Model
+class Role(RoleMixin, db.Model):
+    __tablename__ = 'roles'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+    description = db.Column(db.String(255))
 
-    __table_args__ = (UniqueConstraint(
-        'user_id',
-        'browser_session_key',
-        'provider',
-        name='uq_user_browser_session_key_provider',
-    ),)
+
+# Association table for user roles
+user_roles = db.Table('user_roles',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True)
+)
+
+
+# Legacy OAuth table (will be removed after migration)
+class OAuth(db.Model):
+    __tablename__ = 'oauth'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String, db.ForeignKey('users.id'))
+    provider = db.Column(db.String(50))
+    provider_user_id = db.Column(db.String(255))
+    token = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    user = db.relationship('User', backref='oauth_accounts')
 
 
 # Existing project models with updated foreign keys
@@ -46,7 +75,7 @@ class Project(db.Model):
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     content = db.Column(db.Text, default='')
-    user_id = db.Column(db.String, db.ForeignKey('users.id'), nullable=False)  # Changed to String
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # Changed to Integer for Flask-Security-Too
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     status = db.Column(db.String(20), default='draft')  # draft, in_progress, completed, generating_audio, audio_generated

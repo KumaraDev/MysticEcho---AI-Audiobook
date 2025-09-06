@@ -1,14 +1,15 @@
 import logging
 from app import app, db
-from replit_auth import require_login, make_replit_blueprint
+from flask_security import login_required
 from flask_login import current_user
 from flask import render_template, redirect, url_for, session
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Register authentication blueprint
-app.register_blueprint(make_replit_blueprint(), url_prefix="/auth")
+# Register authentication blueprints
+from routes.auth_security import auth_security_bp
+app.register_blueprint(auth_security_bp, url_prefix='/auth')
 
 # Make session permanent
 @app.before_request
@@ -26,7 +27,7 @@ def index():
 
 # Dashboard route
 @app.route('/dashboard')
-@require_login
+@login_required
 def dashboard_home():
     from models import Project
     user = current_user
