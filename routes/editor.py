@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from models import User, Project, ProjectVersion, Chapter
 from app import db
-from replit_auth import require_login
+from flask_security import login_required
 from services.ai_service import get_content_suggestions, improve_text
 from services.storage_service import save_project_backup
 from services.pdf_service import extract_text_from_pdf
@@ -13,7 +13,7 @@ from datetime import datetime
 editor_bp = Blueprint('editor', __name__)
 
 @editor_bp.route('/project/<int:project_id>')
-@require_login
+@login_required
 def edit_project(project_id):
     user_id = current_user.id
     project = Project.query.filter_by(id=project_id, user_id=user_id).first()
@@ -31,7 +31,7 @@ def edit_project(project_id):
     return render_template('editor.html', project=project, versions=recent_versions, chapters=chapters)
 
 @editor_bp.route('/project/<int:project_id>/chapters')
-@require_login
+@login_required
 def manage_chapters(project_id):
     """Chapter management view"""
     user_id = current_user.id
@@ -46,7 +46,7 @@ def manage_chapters(project_id):
     return render_template('editor/chapters.html', project=project, chapters=chapters)
 
 @editor_bp.route('/save_project/<int:project_id>', methods=['POST'])
-@require_login
+@login_required
 def save_project(project_id):
     user_id = current_user.id
     project = Project.query.filter_by(id=project_id, user_id=user_id).first()
@@ -99,7 +99,7 @@ def save_project(project_id):
 
 # Chapter Management Routes
 @editor_bp.route('/project/<int:project_id>/chapter/create', methods=['POST'])
-@require_login
+@login_required
 def create_chapter(project_id):
     """Create a new chapter"""
     user_id = current_user.id
@@ -139,7 +139,7 @@ def create_chapter(project_id):
         return jsonify({'error': 'Failed to create chapter'}), 500
 
 @editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>', methods=['GET'])
-@require_login
+@login_required
 def get_chapter(project_id, chapter_id):
     """Get chapter content for editing"""
     user_id = current_user.id
@@ -160,7 +160,7 @@ def get_chapter(project_id, chapter_id):
     })
 
 @editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>', methods=['PUT'])
-@require_login
+@login_required
 def update_chapter(project_id, chapter_id):
     """Update chapter content and title"""
     user_id = current_user.id
@@ -190,7 +190,7 @@ def update_chapter(project_id, chapter_id):
         return jsonify({'error': 'Failed to update chapter'}), 500
 
 @editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>', methods=['DELETE'])
-@require_login
+@login_required
 def delete_chapter(project_id, chapter_id):
     """Delete a chapter"""
     user_id = current_user.id
@@ -217,7 +217,7 @@ def delete_chapter(project_id, chapter_id):
         return jsonify({'error': 'Failed to delete chapter'}), 500
 
 @editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>/move', methods=['POST'])
-@require_login
+@login_required
 def move_chapter(project_id, chapter_id):
     """Move a chapter up or down in order"""
     user_id = current_user.id
@@ -266,7 +266,7 @@ def move_chapter(project_id, chapter_id):
         return jsonify({'error': 'Failed to move chapter'}), 500
 
 @editor_bp.route('/project/<int:project_id>/chapters/reorder', methods=['POST'])
-@require_login
+@login_required
 def reorder_chapters(project_id):
     """Reorder chapters via drag and drop"""
     user_id = current_user.id
@@ -300,7 +300,7 @@ def reorder_chapters(project_id):
         return jsonify({'error': 'Failed to reorder chapters'}), 500
 
 @editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>/auto-save', methods=['POST'])
-@require_login
+@login_required
 def auto_save_chapter(project_id, chapter_id):
     """Auto-save chapter content and create versions"""
     user_id = current_user.id
@@ -370,7 +370,7 @@ def auto_save_chapter(project_id, chapter_id):
         return jsonify({'error': 'Failed to auto-save chapter'}), 500
 
 @editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>/versions', methods=['GET'])
-@require_login
+@login_required
 def get_chapter_versions(project_id, chapter_id):
     """Get version history for a chapter"""
     user_id = current_user.id
@@ -405,7 +405,7 @@ def get_chapter_versions(project_id, chapter_id):
         return jsonify({'error': 'Failed to load versions'}), 500
 
 @editor_bp.route('/project/<int:project_id>/version/<int:version_id>/diff', methods=['GET'])
-@require_login
+@login_required
 def get_version_diff(project_id, version_id):
     """Get diff between version and current content"""
     user_id = current_user.id
@@ -438,7 +438,7 @@ def get_version_diff(project_id, version_id):
         return jsonify({'error': 'Failed to generate diff'}), 500
 
 @editor_bp.route('/project/<int:project_id>/chapter/<int:chapter_id>/rollback/<int:version_id>', methods=['POST'])
-@require_login
+@login_required
 def rollback_to_version(project_id, chapter_id, version_id):
     """Rollback chapter to a specific version"""
     user_id = current_user.id
@@ -513,7 +513,7 @@ def create_simple_diff(old_text, new_text):
     return diff_html
 
 @editor_bp.route('/ai_suggestions/<int:project_id>', methods=['POST'])
-@require_login
+@login_required
 def ai_suggestions(project_id):
     user_id = current_user.id
     project = Project.query.filter_by(id=project_id, user_id=user_id).first()
@@ -544,7 +544,7 @@ def ai_suggestions(project_id):
         return jsonify({'error': 'Failed to generate AI suggestions. Please check your API configuration.'}), 500
 
 @editor_bp.route('/ai_preview/<int:project_id>')
-@require_login
+@login_required
 def ai_preview(project_id):
     user_id = current_user.id
     project = Project.query.filter_by(id=project_id, user_id=user_id).first()
@@ -559,7 +559,7 @@ def ai_preview(project_id):
     return render_template('ai_preview.html', project=project, suggestions=suggestions)
 
 @editor_bp.route('/upload_pdf/<int:project_id>', methods=['POST'])
-@require_login
+@login_required
 def upload_pdf(project_id):
     user_id = current_user.id
     project = Project.query.filter_by(id=project_id, user_id=user_id).first()
@@ -629,7 +629,7 @@ def upload_pdf(project_id):
         return jsonify({'error': 'Failed to process PDF file'}), 500
 
 @editor_bp.route('/update_status/<int:project_id>', methods=['POST'])
-@require_login
+@login_required
 def update_status(project_id):
     user_id = current_user.id
     project = Project.query.filter_by(id=project_id, user_id=user_id).first()

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel - MysticEcho{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i data-feather="shield" class="me-2"></i>
+                        Admin Panel
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i data-feather="alert-triangle" class="me-2"></i>
+                        <strong>Admin Access Required:</strong> This area is restricted to administrators only.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>System Information</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Current User:</span>
+                                    <span class="fw-bold">{{ user.email }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>User ID:</span>
+                                    <span class="fw-bold">{{ user.id }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Account Status:</span>
+                                    <span class="badge bg-success">Active</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Email Verified:</span>
+                                    {% if user.confirmed_at %}
+                                        <span class="badge bg-success">Yes</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">No</span>
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Admin Actions</h5>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" disabled>
+                                    <i data-feather="users" class="me-1"></i>
+                                    Manage Users
+                                </button>
+                                <button class="btn btn-outline-secondary" disabled>
+                                    <i data-feather="database" class="me-1"></i>
+                                    Database Management
+                                </button>
+                                <button class="btn btn-outline-info" disabled>
+                                    <i data-feather="bar-chart" class="me-1"></i>
+                                    System Analytics
+                                </button>
+                                <button class="btn btn-outline-warning" disabled>
+                                    <i data-feather="settings" class="me-1"></i>
+                                    System Settings
+                                </button>
+                            </div>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i data-feather="info" class="me-1"></i>
+                                    Additional admin features will be available in future updates.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('auth_security.profile') }}" class="btn btn-outline-secondary">
+                            <i data-feather="arrow-left" class="me-1"></i>
+                            Back to Profile
+                        </a>
+                        <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-primary">
+                            <i data-feather="home" class="me-1"></i>
+                            Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize Feather icons
+    feather.replace();
+</script>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Sign In - MysticEcho{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i data-feather="log-in" class="me-2"></i>
+                        Sign In to MysticEcho
+                    </h3>
+                    <p class="mb-0 mt-2 opacity-75">Welcome back! Please sign in to continue.</p>
+                </div>
+                <div class="card-body p-4">
+                    <form action="{{ url_for('security.login') }}" method="POST" novalidate>
+                        {{ login_user_form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ login_user_form.email.label(class="form-label fw-bold") }}
+                            {{ login_user_form.email(class="form-control form-control-lg" + (" is-invalid" if login_user_form.email.errors else "")) }}
+                            {% if login_user_form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in login_user_form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ login_user_form.password.label(class="form-label fw-bold") }}
+                            {{ login_user_form.password(class="form-control form-control-lg" + (" is-invalid" if login_user_form.password.errors else "")) }}
+                            {% if login_user_form.password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in login_user_form.password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            {{ login_user_form.remember(class="form-check-input") }}
+                            {{ login_user_form.remember.label(class="form-check-label") }}
+                        </div>
+                        
+                        <div class="d-grid mb-3">
+                            {{ login_user_form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                    
+                    <div class="text-center">
+                        <a href="{{ url_for('security.forgot_password') }}" class="text-decoration-none">
+                            <i data-feather="help-circle" class="me-1"></i>
+                            Forgot Password?
+                        </a>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <p class="mb-0">Don't have an account?</p>
+                        <a href="{{ url_for('security.register') }}" class="btn btn-outline-primary">
+                            <i data-feather="user-plus" class="me-1"></i>
+                            Create Account
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize Feather icons
+    feather.replace();
+</script>
+{% endblock %}

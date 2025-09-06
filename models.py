@@ -53,18 +53,7 @@ user_roles = db.Table('user_roles',
 )
 
 
-# Legacy OAuth table (will be removed after migration)
-class OAuth(db.Model):
-    __tablename__ = 'oauth'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String, db.ForeignKey('users.id'))
-    provider = db.Column(db.String(50))
-    provider_user_id = db.Column(db.String(255))
-    token = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.now)
-    
-    user = db.relationship('User', backref='oauth_accounts')
+# OAuth model removed - using Flask-Security-Too instead
 
 
 # Existing project models with updated foreign keys
