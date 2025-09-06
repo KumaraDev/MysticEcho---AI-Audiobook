@@ -123,7 +123,7 @@ class TTSService:
             logging.error(f"TTS generation error: {e}")
             return {
                 'success': False,
-                'error': str(e)
+                'error': 'Failed to generate audio. Please try again later.'
             }
 
     def get_available_voices(self):

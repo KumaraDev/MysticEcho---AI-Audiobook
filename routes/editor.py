@@ -72,14 +72,16 @@ def save_project(project_id):
             version.notes = f"Manual save at {project.updated_at}"
             db.session.add(version)
         
+        # Commit database changes first
         db.session.commit()
         
-        # Backup to cloud storage
+        # Backup to cloud storage (non-critical, don't fail if this fails)
         if not auto_save:
             try:
                 save_project_backup(project)
             except Exception as e:
                 logging.warning(f"Cloud backup failed: {e}")
+                # Don't fail the save operation if backup fails
         
         word_count = len(content.split()) if content else 0
         
@@ -509,26 +511,6 @@ def create_simple_diff(old_text, new_text):
     '''
     
     return diff_html
-    
-    data = request.get_json()
-    chapter_order = data.get('chapter_order', [])
-    
-    try:
-        for index, chapter_id in enumerate(chapter_order):
-            chapter = Chapter.query.filter_by(id=chapter_id, project_id=project_id).first()
-            if chapter:
-                chapter.order_index = index
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Chapters reordered successfully'
-        })
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Reorder chapters error: {e}")
-        return jsonify({'error': 'Failed to reorder chapters'}), 500
 
 @editor_bp.route('/ai_suggestions/<int:project_id>', methods=['POST'])
 @require_login
@@ -593,8 +575,20 @@ def upload_pdf(project_id):
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
     
-    if file.filename and not file.filename.lower().endswith('.pdf'):
+    # Validate file type
+    if not file.filename or not file.filename.lower().endswith('.pdf'):
         return jsonify({'error': 'Only PDF files are allowed'}), 400
+    
+    # Validate file size (max 10MB)
+    file.seek(0, 2)  # Seek to end
+    file_size = file.tell()
+    file.seek(0)  # Reset to beginning
+    
+    if file_size > 10 * 1024 * 1024:  # 10MB limit
+        return jsonify({'error': 'File too large. Maximum size is 10MB'}), 400
+    
+    if file_size == 0:
+        return jsonify({'error': 'Empty file not allowed'}), 400
     
     try:
         # Save file temporarily

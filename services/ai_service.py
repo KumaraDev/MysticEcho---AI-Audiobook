@@ -76,7 +76,7 @@ def get_content_suggestions(text, suggestion_type='improve'):
         
     except Exception as e:
         logging.error(f"AI suggestions error: {e}")
-        raise Exception(f"Failed to generate AI suggestions: {str(e)}")
+        raise Exception("Failed to generate AI suggestions. Please check your API configuration and try again.")
 
 def improve_text(text):
     """
@@ -123,7 +123,7 @@ def improve_text(text):
         
     except Exception as e:
         logging.error(f"Text improvement error: {e}")
-        raise Exception(f"Failed to improve text: {str(e)}")
+        raise Exception("Failed to improve text. Please check your API configuration and try again.")
 
 def analyze_audiobook_readiness(content):
     """
@@ -170,4 +170,4 @@ def analyze_audiobook_readiness(content):
         
     except Exception as e:
         logging.error(f"Readiness analysis error: {e}")
-        raise Exception(f"Failed to analyze content: {str(e)}")
+        raise Exception("Failed to analyze content. Please check your API configuration and try again.")

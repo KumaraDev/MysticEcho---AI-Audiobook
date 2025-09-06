@@ -54,7 +54,7 @@ def save_project_backup(project):
             }
         )
         
-        # Update project storage path
+        # Update project storage path (caller should commit this change)
         project.storage_path = file_key
         
         logging.info(f"Project {project.id} backed up to Wasabi: {file_key}")

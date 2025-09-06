@@ -41,8 +41,22 @@ def create_project():
     title = request.form.get('title', '').strip()
     description = request.form.get('description', '').strip()
     
+    # Input validation
     if not title:
         flash('Project title is required.', 'error')
+        return redirect(url_for('dashboard.index'))
+    
+    if len(title) > 200:
+        flash('Project title must be 200 characters or less.', 'error')
+        return redirect(url_for('dashboard.index'))
+    
+    if len(description) > 1000:
+        flash('Project description must be 1000 characters or less.', 'error')
+        return redirect(url_for('dashboard.index'))
+    
+    # Check for malicious content
+    if any(char in title for char in ['<', '>', '&', '"', "'"]):
+        flash('Project title contains invalid characters.', 'error')
         return redirect(url_for('dashboard.index'))
     
     try:
