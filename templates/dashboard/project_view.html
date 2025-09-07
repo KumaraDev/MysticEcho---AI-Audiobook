@@ -42,7 +42,12 @@
                         </div>
                         <div class="text-muted small">
                             <i data-feather="arrow-right" class="me-1" style="width: 14px; height: 14px;"></i>
-                            {{ chapters|length }} chapters • {{ project.content.split()|length if project.content else 0 }} words
+                            {{ chapters|length }} chapters • 
+                            {% set total_words = 0 %}
+                            {% for chapter in chapters %}
+                                {% set total_words = total_words + (chapter.content.split()|length if chapter.content else 0) %}
+                            {% endfor %}
+                            {{ total_words }} words
                         </div>
                     </div>
                 </div>
