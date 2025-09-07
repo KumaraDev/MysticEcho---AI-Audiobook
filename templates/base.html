@@ -64,18 +64,6 @@
                                 <li><a class="dropdown-item" href="{{ url_for('dashboard.index') }}">
                                     <i data-feather="layout" class="me-2"></i>Dashboard
                                 </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('auth_security.profile') }}">
-                                    <i data-feather="user" class="me-2"></i>Profile
-                                </a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('auth_security.change_password') }}">
-                                    <i data-feather="key" class="me-2"></i>Change Password
-                                </a></li>
-                                {% if current_user.has_role('admin') %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('auth_security.admin') }}">
-                                    <i data-feather="shield" class="me-2"></i>Admin Panel
-                                </a></li>
-                                {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('security.logout') }}">
                                     <i data-feather="log-out" class="me-2"></i>Logout
@@ -86,11 +74,6 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('security.login') }}">
                                 <i data-feather="log-in" class="me-1"></i>Sign In
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('security.register') }}">
-                                <i data-feather="user-plus" class="me-1"></i>Sign Up
                             </a>
                         </li>
                     {% endif %}

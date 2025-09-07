@@ -1,17 +1,18 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from models import User, Project
 from app import db
-from flask_login import current_user
-from flask_security import login_required
+from models import User, Project
+from flask_security import current_user, auth_required
 import logging
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/')
-@login_required
+@auth_required()
 def index():
     user = current_user
-    logging.info(f"Dashboard access for user: {user.id}")
+    logging.info(f"Dashboard access for user: {user.id if user.is_authenticated else 'NOT AUTHENTICATED'}")
+    logging.info(f"User authenticated: {user.is_authenticated}")
+    logging.info(f"User email: {user.email if user.is_authenticated else 'N/A'}")
     
     # Get user's projects
     projects = Project.query.filter_by(user_id=user.id).order_by(Project.updated_at.desc()).all()
@@ -35,7 +36,7 @@ def index():
                          stats=stats)
 
 @dashboard_bp.route('/create_project', methods=['POST'])
-@login_required
+@auth_required()
 def create_project():
     user_id = current_user.id
     title = request.form.get('title', '').strip()
@@ -79,7 +80,7 @@ def create_project():
         return redirect(url_for('dashboard.index'))
 
 @dashboard_bp.route('/delete_project/<int:project_id>', methods=['POST'])
-@login_required
+@auth_required()
 def delete_project(project_id):
     user_id = current_user.id
     project = Project.query.filter_by(id=project_id, user_id=user_id).first()
@@ -103,7 +104,7 @@ def delete_project(project_id):
     return redirect(url_for('dashboard.index'))
 
 @dashboard_bp.route('/project/<int:project_id>/update_status', methods=['POST'])
-@login_required
+@auth_required()
 def update_project_status(project_id):
     user_id = current_user.id
     project = Project.query.filter_by(id=project_id, user_id=user_id).first()

@@ -18,16 +18,17 @@
         
         .ql-container.ql-snow {
             border: 1px solid var(--bs-gray-600);
-            background-color: var(--bs-gray-900);
-            color: var(--bs-light);
+            background-color: white;
+            color: #333;
         }
         
         .ql-editor {
             font-family: 'Georgia', serif;
             font-size: 16px;
             line-height: 1.6;
-            color: var(--bs-light);
+            color: #333;
             min-height: 400px;
+            background-color: white;
         }
         
         .ql-snow .ql-stroke {
@@ -104,7 +105,19 @@
                         Back
                     </a>
                     <div>
-                        <h4 class="mb-1">{{ project.title }}</h4>
+                        <div class="d-flex align-items-center mb-1">
+                            <h4 class="mb-0 me-2" id="project-title-display" style="cursor: pointer;" title="Click to edit">
+                                {{ project.title }}
+                                <i data-feather="edit-2" class="ms-1" style="width: 16px; height: 16px;"></i>
+                            </h4>
+                            <input type="text" class="form-control d-none" id="project-title-input" value="{{ project.title }}" style="max-width: 300px;">
+                            <button class="btn btn-sm btn-success d-none me-1" id="project-title-save">
+                                <i data-feather="check" style="width: 14px; height: 14px;"></i>
+                            </button>
+                            <button class="btn btn-sm btn-secondary d-none" id="project-title-cancel">
+                                <i data-feather="x" style="width: 14px; height: 14px;"></i>
+                            </button>
+                        </div>
                         <div class="d-flex align-items-center">
                             <span class="badge badge-status-{{ project.status }} me-2">{{ project.status.replace('_', ' ').title() }}</span>
                             <span class="text-muted small" id="word-count">0 words</span>
@@ -172,20 +185,6 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="btn-group btn-group-sm" role="group" id="ai-buttons-group">
-                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('improve')" id="ai-improve-btn" disabled>
-                                <i data-feather="cpu" class="me-1"></i>
-                                Improve
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('expand')" id="ai-expand-btn" disabled>
-                                <i data-feather="plus-square" class="me-1"></i>
-                                Expand
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" onclick="getAISuggestions('summarize')" id="ai-summarize-btn" disabled>
-                                <i data-feather="minus-square" class="me-1"></i>
-                                Summarize
-                            </button>
-                        </div>
                     </div>
                 </div>
                 <div class="card-body p-0" style="position: relative; min-height: 600px;">
@@ -250,21 +249,6 @@
         
         <!-- Sidebar -->
         <div class="col-lg-4">
-            <!-- AI Suggestions Panel -->
-            <div class="card border-0 mb-3">
-                <div class="card-header bg-transparent border-0 pb-2">
-                    <h6 class="mb-0">
-                        <i data-feather="cpu" class="me-2"></i>
-                        AI Assistant
-                    </h6>
-                </div>
-                <div class="card-body" id="ai-suggestions-panel">
-                    <div class="text-center text-muted py-4" id="ai-default-message">
-                        <i data-feather="zap" style="width: 48px; height: 48px;" class="mb-3"></i>
-                        <p class="mb-0">Select a chapter first, then highlight text to get AI suggestions</p>
-                    </div>
-                </div>
-            </div>
             
             <!-- Chapter Organization Panel -->
             <div class="card border-0 mb-3">
@@ -351,7 +335,7 @@
                                 <div class="text-muted small">Complete manuscript and structure</div>
                             </div>
                         </div>
-                        <a href="{{ url_for('audio.preview_audio', project_id=project.id) }}" class="list-group-item list-group-item-action d-flex align-items-center px-0 py-2 text-decoration-none">
+                        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center px-0 py-2 text-decoration-none" onclick="alert('Audio features coming soon!')">
                             <i data-feather="headphones" class="text-info me-3"></i>
                             <div class="flex-grow-1">
                                 <div class="fw-semibold small">Preview & Review</div>
@@ -359,7 +343,7 @@
                             </div>
                             <i data-feather="chevron-right" class="text-muted"></i>
                         </a>
-                        <a href="{{ url_for('audio.generate_audio', project_id=project.id) }}" class="list-group-item list-group-item-action d-flex align-items-center px-0 py-2 text-decoration-none">
+                        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center px-0 py-2 text-decoration-none" onclick="alert('Audio features coming soon!')">
                             <i data-feather="mic" class="text-primary me-3"></i>
                             <div class="flex-grow-1">
                                 <div class="fw-semibold small">Generate Audio</div>
@@ -367,7 +351,7 @@
                             </div>
                             <i data-feather="chevron-right" class="text-muted"></i>
                         </a>
-                        <a href="{{ url_for('audio.export_audiobook', project_id=project.id) }}" class="list-group-item list-group-item-action d-flex align-items-center px-0 py-2 text-decoration-none">
+                        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center px-0 py-2 text-decoration-none" onclick="alert('Audio features coming soon!')">
                             <i data-feather="download" class="text-success me-3"></i>
                             <div class="flex-grow-1">
                                 <div class="fw-semibold small">Export & Download</div>
@@ -401,36 +385,6 @@
     </div>
 </div>
 
-<!-- AI Suggestions Modal -->
-<div class="modal fade" id="aiSuggestionsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i data-feather="cpu" class="me-2"></i>
-                    AI Suggestions
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="ai-modal-content">
-                    <div class="text-center py-4">
-                        <div class="spinner-border text-info" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-3 text-muted">Generating AI suggestions...</p>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-info" id="apply-suggestion-btn" style="display: none;" onclick="applySuggestion()">
-                    Apply Suggestion
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 
 {% endblock %}
@@ -659,17 +613,6 @@
         }
     });
     
-    function enableAIButtons() {
-        document.getElementById('ai-improve-btn').disabled = false;
-        document.getElementById('ai-expand-btn').disabled = false;
-        document.getElementById('ai-summarize-btn').disabled = false;
-    }
-    
-    function disableAIButtons() {
-        document.getElementById('ai-improve-btn').disabled = true;
-        document.getElementById('ai-expand-btn').disabled = true;
-        document.getElementById('ai-summarize-btn').disabled = true;
-    }
     
     // Chapter management functions
     function moveChapterUp(chapterId) {
@@ -808,17 +751,15 @@
                     mysticEditor.updateWordCount();
                 }
                 
+                // Update word count display
+                updateWordCount();
+                
                 // Update save button text
                 document.getElementById('save-btn-text').textContent = 'Save Chapter';
                 
-                // Enable AI buttons and save button
-                enableAIButtons();
+                // Enable save button
                 document.getElementById('save-btn').disabled = false;
                 
-                // Update AI assistant message
-                document.getElementById('ai-default-message').innerHTML = 
-                    '<i data-feather="zap" style="width: 48px; height: 48px;" class="mb-3"></i>' +
-                    '<p class="mb-0">Select text and click an AI button to get suggestions</p>';
                 
                 // Load version history and setup auto-save
                 loadChapterVersions(chapterId);
@@ -880,14 +821,9 @@
         editorContainer.style.height = '600px';
         document.getElementById('chapter-version-history').style.display = 'none';
         
-        // Disable AI buttons and save button
-        disableAIButtons();
+        // Disable save button
         document.getElementById('save-btn').disabled = true;
         
-        // Reset AI assistant message
-        document.getElementById('ai-default-message').innerHTML = 
-            '<i data-feather="zap" style="width: 48px; height: 48px;" class="mb-3"></i>' +
-            '<p class="mb-0">Select a chapter first, then highlight text to get AI suggestions</p>';
         
         // Clear chapter auto-save interval
         clearChapterAutoSave();
@@ -1377,6 +1313,12 @@
         
         const words = content.trim() === '' ? 0 : content.trim().split(/\s+/).length;
         
+        // Update the word count display
+        const wordCountElement = document.getElementById('word-count');
+        if (wordCountElement) {
+            wordCountElement.textContent = `${words} words`;
+        }
+        
         if (mysticEditor) {
             mysticEditor.currentContent = quillEditor ? quillEditor.root.innerHTML : content;
         }
@@ -1391,6 +1333,9 @@
     
     // Check if we should auto-edit a chapter after page reload
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize word count
+        updateWordCount();
+        
         const autoEditChapterId = sessionStorage.getItem('autoEditChapter');
         if (autoEditChapterId) {
             sessionStorage.removeItem('autoEditChapter');
@@ -1400,6 +1345,77 @@
             }, 500);
         }
     });
+
+    // Project title inline editing
+    document.getElementById('project-title-display').addEventListener('click', function() {
+        const display = document.getElementById('project-title-display');
+        const input = document.getElementById('project-title-input');
+        const saveBtn = document.getElementById('project-title-save');
+        const cancelBtn = document.getElementById('project-title-cancel');
+        
+        display.classList.add('d-none');
+        input.classList.remove('d-none');
+        saveBtn.classList.remove('d-none');
+        cancelBtn.classList.remove('d-none');
+        
+        input.focus();
+        input.select();
+    });
+
+    document.getElementById('project-title-save').addEventListener('click', function() {
+        const newTitle = document.getElementById('project-title-input').value.trim();
+        if (newTitle && newTitle !== '{{ project.title }}') {
+            // Save the new title
+            fetch(`/editor/project/${projectId}/update-title`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title: newTitle })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('project-title-display').innerHTML = newTitle + ' <i data-feather="edit-2" class="ms-1" style="width: 16px; height: 16px;"></i>';
+                    feather.replace();
+                    exitEditMode();
+                } else {
+                    alert('Failed to update project title');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating project title:', error);
+                alert('Failed to update project title');
+            });
+        } else {
+            exitEditMode();
+        }
+    });
+
+    document.getElementById('project-title-cancel').addEventListener('click', function() {
+        document.getElementById('project-title-input').value = '{{ project.title }}';
+        exitEditMode();
+    });
+
+    document.getElementById('project-title-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('project-title-save').click();
+        } else if (e.key === 'Escape') {
+            document.getElementById('project-title-cancel').click();
+        }
+    });
+
+    function exitEditMode() {
+        const display = document.getElementById('project-title-display');
+        const input = document.getElementById('project-title-input');
+        const saveBtn = document.getElementById('project-title-save');
+        const cancelBtn = document.getElementById('project-title-cancel');
+        
+        display.classList.remove('d-none');
+        input.classList.add('d-none');
+        saveBtn.classList.add('d-none');
+        cancelBtn.classList.add('d-none');
+    }
 </script>
 
 <!-- Create Chapter Modal -->

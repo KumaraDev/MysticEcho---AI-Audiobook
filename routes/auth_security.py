@@ -3,26 +3,26 @@ Flask-Security-Too Authentication Routes
 Handles user authentication, registration, and profile management
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_security import login_required, current_user, roles_required
+from flask_security import auth_required, current_user, roles_required
 from flask_security.utils import hash_password, verify_password
 
 auth_security_bp = Blueprint('auth_security', __name__)
 
 @auth_security_bp.route('/profile')
-@login_required
+@auth_required
 def profile():
     """User profile page"""
     return render_template('profile.html', user=current_user)
 
 @auth_security_bp.route('/admin')
-@login_required
+@auth_required
 @roles_required('admin')
 def admin():
     """Admin panel - requires admin role"""
     return render_template('admin.html', user=current_user)
 
 @auth_security_bp.route('/change-password', methods=['GET', 'POST'])
-@login_required
+@auth_required
 def change_password():
     """Change password page"""
     if request.method == 'POST':
@@ -55,7 +55,7 @@ def change_password():
     return render_template('change_password.html')
 
 @auth_security_bp.route('/update-profile', methods=['POST'])
-@login_required
+@auth_required
 def update_profile():
     """Update user profile"""
     first_name = request.form.get('first_name', '').strip()

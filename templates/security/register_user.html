@@ -14,7 +14,7 @@
                     <p class="mb-0 mt-2 opacity-75">Join MysticEcho and start creating amazing audiobooks!</p>
                 </div>
                 <div class="card-body p-4">
-                    <form action="{{ url_for('security.register') }}" method="POST" novalidate>
+                    <form action="{{ url_for('security.login') }}" method="POST" novalidate>
                         {{ register_user_form.hidden_tag() }}
                         
                         <div class="mb-3">

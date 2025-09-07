@@ -1,8 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, send_file
 from models import Project, User
 from app import db
-from flask_login import current_user
-from flask_security import login_required
+from flask_security import current_user, auth_required
 from services.tts_service import tts_service
 import os
 import tempfile
@@ -11,7 +10,7 @@ import logging
 audio_bp = Blueprint('audio', __name__, url_prefix='/audio')
 
 @audio_bp.route('/generate/<int:project_id>')
-@login_required
+@auth_required()
 def generate_audio(project_id):
     """Show audio generation interface"""
     try:
@@ -30,7 +29,7 @@ def generate_audio(project_id):
         return redirect(url_for('dashboard.index'))
 
 @audio_bp.route('/generate_tts/<int:project_id>', methods=['POST'])
-@login_required
+@auth_required()
 def generate_tts(project_id):
     """Generate text-to-speech audio from project content"""
     try:
@@ -90,7 +89,7 @@ def generate_tts(project_id):
         return jsonify({'success': False, 'error': 'Failed to generate audio'})
 
 @audio_bp.route('/preview/<int:project_id>')
-@login_required
+@auth_required()
 def preview_audio(project_id):
     """Show audio preview interface"""
     try:
@@ -109,7 +108,7 @@ def preview_audio(project_id):
         return redirect(url_for('dashboard.index'))
 
 @audio_bp.route('/download/<int:project_id>')
-@login_required
+@auth_required()
 def download_audio(project_id):
     """Download generated audio file"""
     try:
@@ -134,7 +133,7 @@ def download_audio(project_id):
         return redirect(url_for('audio.preview_audio', project_id=project_id))
 
 @audio_bp.route('/export/<int:project_id>')
-@login_required
+@auth_required()
 def export_audiobook(project_id):
     """Show audiobook export options"""
     try:

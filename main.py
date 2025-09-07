@@ -1,15 +1,10 @@
 import logging
 from app import app, db
-from flask_security import login_required
-from flask_login import current_user
+from flask_security import auth_required, current_user
 from flask import render_template, redirect, url_for, session
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
-
-# Register authentication blueprints
-from routes.auth_security import auth_security_bp
-app.register_blueprint(auth_security_bp, url_prefix='/auth')
 
 # Make session permanent
 @app.before_request
@@ -20,36 +15,35 @@ def make_session_permanent():
 @app.route('/')
 def index():
     user = current_user
+    logging.info(f"Index route - User authenticated: {user.is_authenticated}")
+    logging.info(f"Index route - User email: {user.email if user.is_authenticated else 'N/A'}")
     if user.is_authenticated:
-        return redirect(url_for('dashboard_home'))
+        return redirect('/dashboard/')
     else:
         return render_template('landing.html')
 
-# Dashboard route
-@app.route('/dashboard')
-@login_required
-def dashboard_home():
-    from models import Project
-    user = current_user
-    projects = Project.query.filter_by(user_id=user.id).order_by(Project.updated_at.desc()).all()
+# Debug route to check authentication state
+@app.route('/debug-auth')
+def debug_auth():
+    fst_user = current_user
     
-    # Calculate project statistics
-    total_projects = len(projects)
-    draft_projects = len([p for p in projects if p.status == 'draft'])
-    in_progress_projects = len([p for p in projects if p.status == 'in_progress'])
-    completed_projects = len([p for p in projects if p.status == 'completed'])
+    return f"""
+    <h1>Authentication Debug</h1>
+    <h2>Flask-Security-Too current_user:</h2>
+    <p>User authenticated: {fst_user.is_authenticated}</p>
+    <p>User email: {fst_user.email if fst_user.is_authenticated else 'N/A'}</p>
+    <p>User ID: {fst_user.id if fst_user.is_authenticated else 'N/A'}</p>
+    <p>User active: {fst_user.active if fst_user.is_authenticated else 'N/A'}</p>
+    <p>User confirmed_at: {fst_user.confirmed_at if fst_user.is_authenticated else 'N/A'}</p>
+    <p>User fs_uniquifier: {fst_user.fs_uniquifier if fst_user.is_authenticated else 'N/A'}</p>
     
-    stats = {
-        'total': total_projects,
-        'draft': draft_projects,
-        'in_progress': in_progress_projects,
-        'completed': completed_projects
-    }
+    <h2>Session Data:</h2>
+    <p>Session keys: {list(session.keys())}</p>
+    <p>Session data: {dict(session)}</p>
     
-    return render_template('dashboard.html', 
-                         user=user,
-                         projects=projects,
-                         stats=stats)
+    <p><a href="/dashboard/">Try Dashboard</a></p>
+    <p><a href="/logout">Logout</a></p>
+    """
 
 # Register blueprints
 try:
@@ -66,12 +60,14 @@ try:
 except Exception as e:
     logging.error(f"Error registering editor blueprint: {e}")
 
-try:
-    from routes.audio import audio_bp
-    app.register_blueprint(audio_bp, url_prefix='/audio')
-    logging.info("Registered audio blueprint")
-except Exception as e:
-    logging.error(f"Error registering audio blueprint: {e}")
+# Temporarily disable audio blueprint to fix hanging issue
+logging.info("Audio blueprint temporarily disabled to fix hanging issue")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    print("🚀 Starting MysticEcho application...")
+    print("🌐 Application will be available at: http://localhost:9001")
+    print("🔐 Test accounts:")
+    print("   Admin: admin@mysticecho.com / admin123")
+    print("   User:  test@mysticecho.com / test123")
+    print("")
+    app.run(host="0.0.0.0", port=9001, debug=True)

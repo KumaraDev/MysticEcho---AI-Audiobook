@@ -14,28 +14,27 @@
                     <p class="mb-0 mt-2 opacity-75">Welcome back! Please sign in to continue.</p>
                 </div>
                 <div class="card-body p-4">
-                    <form action="{{ url_for('security.login') }}" method="POST" novalidate>
+                    <form action="{{ url_for_security('login') }}" method="POST" novalidate>
                         {{ login_user_form.hidden_tag() }}
-                        
                         <div class="mb-3">
-                            {{ login_user_form.email.label(class="form-label fw-bold") }}
-                            {{ login_user_form.email(class="form-control form-control-lg" + (" is-invalid" if login_user_form.email.errors else "")) }}
+                            <label for="email" class="form-label fw-bold">Email Address</label>
+                            {{ login_user_form.email(class="form-control form-control-lg", placeholder="Enter your email") }}
                             {% if login_user_form.email.errors %}
-                                <div class="invalid-feedback">
+                                <div class="text-danger">
                                     {% for error in login_user_form.email.errors %}
-                                        {{ error }}
+                                        <small>{{ error }}</small>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
                         
                         <div class="mb-3">
-                            {{ login_user_form.password.label(class="form-label fw-bold") }}
-                            {{ login_user_form.password(class="form-control form-control-lg" + (" is-invalid" if login_user_form.password.errors else "")) }}
+                            <label for="password" class="form-label fw-bold">Password</label>
+                            {{ login_user_form.password(class="form-control form-control-lg", placeholder="Enter your password") }}
                             {% if login_user_form.password.errors %}
-                                <div class="invalid-feedback">
+                                <div class="text-danger">
                                     {% for error in login_user_form.password.errors %}
-                                        {{ error }}
+                                        <small>{{ error }}</small>
                                     {% endfor %}
                                 </div>
                             {% endif %}
@@ -43,16 +42,16 @@
                         
                         <div class="mb-3 form-check">
                             {{ login_user_form.remember(class="form-check-input") }}
-                            {{ login_user_form.remember.label(class="form-check-label") }}
+                            <label class="form-check-label" for="remember">Remember me</label>
                         </div>
                         
                         <div class="d-grid mb-3">
-                            {{ login_user_form.submit(class="btn btn-primary btn-lg") }}
+                            <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
                         </div>
                     </form>
                     
                     <div class="text-center">
-                        <a href="{{ url_for('security.forgot_password') }}" class="text-decoration-none">
+                        <a href="{{ url_for('security.login') }}" class="text-decoration-none">
                             <i data-feather="help-circle" class="me-1"></i>
                             Forgot Password?
                         </a>
@@ -62,7 +61,7 @@
                     
                     <div class="text-center">
                         <p class="mb-0">Don't have an account?</p>
-                        <a href="{{ url_for('security.register') }}" class="btn btn-outline-primary">
+                        <a href="{{ url_for('security.login') }}" class="btn btn-outline-primary">
                             <i data-feather="user-plus" class="me-1"></i>
                             Create Account
                         </a>
