@@ -713,9 +713,21 @@
                     `;
                     feather.replace();
                 }
-                document.getElementById('current-chapter-title').textContent = data.title;
-                document.getElementById('chapter-editor-indicator').style.display = 'flex';
-                document.getElementById('chapter-title-editor').style.display = 'block';
+                // Update chapter title with safety check
+                const currentChapterTitle = document.getElementById('current-chapter-title');
+                if (currentChapterTitle) {
+                    currentChapterTitle.textContent = data.title;
+                }
+                
+                const chapterEditorIndicator = document.getElementById('chapter-editor-indicator');
+                if (chapterEditorIndicator) {
+                    chapterEditorIndicator.style.display = 'flex';
+                }
+                
+                const chapterTitleEditor = document.getElementById('chapter-title-editor');
+                if (chapterTitleEditor) {
+                    chapterTitleEditor.style.display = 'block';
+                }
                 
                 // Completely replace container content with only chapter editor
                 const editorContainer = document.getElementById('editor-container');
@@ -740,8 +752,10 @@
                 const titleHeight = titleEditor.offsetHeight || 80;
                 document.getElementById('editor-container').style.height = `${600 - titleHeight}px`;
                 
-                // Initialize Quill.js editor
-                initializeQuillEditor(data.content || '');
+                // Initialize Quill.js editor with a small delay to ensure DOM is ready
+                setTimeout(() => {
+                    initializeQuillEditor(data.content || '');
+                }, 100);
                 
                 // Initialize the editor for this chapter
                 if (mysticEditor) {
