@@ -5,6 +5,36 @@
 {% block head %}
     <!-- Quill.js CSS -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    
+    <!-- Status Management Styles -->
+    <style>
+    .list-group-item[data-status] {
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+    
+    .list-group-item[data-status]:hover {
+        background-color: var(--bs-light);
+        border-left-color: var(--bs-primary);
+    }
+    
+    .list-group-item[data-status].active {
+        background-color: var(--bs-primary-subtle);
+        border-left-color: var(--bs-primary);
+    }
+    
+    .status-icon {
+        transition: color 0.2s ease;
+    }
+    
+    .progress {
+        background-color: var(--bs-gray-200);
+    }
+    
+    .progress-bar {
+        transition: width 0.5s ease;
+    }
+    </style>
     <!-- SortableJS -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <!-- Quill.js JavaScript -->
@@ -293,47 +323,92 @@
                 </div>
             </div>
 
-            <!-- Next Steps Panel -->
+            <!-- Project Status & Next Steps Panel -->
             <div class="card border-0 mb-3">
                 <div class="card-header bg-transparent border-0 pb-2">
                     <h6 class="mb-0">
-                        <i data-feather="arrow-right" class="me-2"></i>
-                        Next Steps
+                        <i data-feather="target" class="me-2"></i>
+                        Project Status & Next Steps
                     </h6>
                 </div>
                 <div class="card-body">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item d-flex align-items-center px-0 py-2">
-                            <i data-feather="check-circle" class="text-success me-3"></i>
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold small">Write & Edit + Organize Chapters</div>
-                                <div class="text-muted small">Complete manuscript and structure</div>
-                            </div>
+                    <!-- Current Status -->
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="small text-muted">Current Status:</span>
+                            <span class="badge" id="current-status-badge">{{ project.status.replace('_', ' ').title() }}</span>
                         </div>
-                        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center px-0 py-2 text-decoration-none" onclick="alert('Audio features coming soon!')">
-                            <i data-feather="headphones" class="text-info me-3"></i>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar" id="status-progress" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Steps -->
+                    <div class="list-group list-group-flush">
+                        <!-- Step 1: Draft -->
+                        <div class="list-group-item d-flex align-items-center px-0 py-2" 
+                             data-status="draft" 
+                             onclick="updateProjectStatus('draft')"
+                             style="cursor: pointer;">
+                            <i data-feather="edit-3" class="me-3 status-icon"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold small">Draft</div>
+                                <div class="text-muted small">Start writing your content</div>
+                            </div>
+                            <i data-feather="chevron-right" class="text-muted"></i>
+                        </div>
+                        
+                        <!-- Step 2: In Progress -->
+                        <div class="list-group-item d-flex align-items-center px-0 py-2" 
+                             data-status="in_progress" 
+                             onclick="updateProjectStatus('in_progress')"
+                             style="cursor: pointer;">
+                            <i data-feather="edit" class="me-3 status-icon"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold small">In Progress</div>
+                                <div class="text-muted small">Actively working on chapters</div>
+                            </div>
+                            <i data-feather="chevron-right" class="text-muted"></i>
+                        </div>
+                        
+                        <!-- Step 3: Preview & Review -->
+                        <div class="list-group-item d-flex align-items-center px-0 py-2" 
+                             data-status="preview" 
+                             onclick="alert('Preview & Review features coming soon!')"
+                             style="cursor: pointer;">
+                            <i data-feather="headphones" class="me-3 status-icon"></i>
                             <div class="flex-grow-1">
                                 <div class="fw-semibold small">Preview & Review</div>
                                 <div class="text-muted small">Listen to your audiobook</div>
                             </div>
                             <i data-feather="chevron-right" class="text-muted"></i>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center px-0 py-2 text-decoration-none" onclick="alert('Audio features coming soon!')">
-                            <i data-feather="mic" class="text-primary me-3"></i>
+                        </div>
+                        
+                        <!-- Step 4: Generate Audio -->
+                        <div class="list-group-item d-flex align-items-center px-0 py-2" 
+                             data-status="generating_audio" 
+                             onclick="alert('Audio generation features coming soon!')"
+                             style="cursor: pointer;">
+                            <i data-feather="mic" class="me-3 status-icon"></i>
                             <div class="flex-grow-1">
                                 <div class="fw-semibold small">Generate Audio</div>
                                 <div class="text-muted small">Convert text to speech</div>
                             </div>
                             <i data-feather="chevron-right" class="text-muted"></i>
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center px-0 py-2 text-decoration-none" onclick="alert('Audio features coming soon!')">
-                            <i data-feather="download" class="text-success me-3"></i>
+                        </div>
+                        
+                        <!-- Step 5: Completed -->
+                        <div class="list-group-item d-flex align-items-center px-0 py-2" 
+                             data-status="completed" 
+                             onclick="updateProjectStatus('completed')"
+                             style="cursor: pointer;">
+                            <i data-feather="check-circle" class="me-3 status-icon"></i>
                             <div class="flex-grow-1">
-                                <div class="fw-semibold small">Export & Download</div>
-                                <div class="text-muted small">Get your final audiobook</div>
+                                <div class="fw-semibold small">Completed</div>
+                                <div class="text-muted small">Project finished and ready</div>
                             </div>
                             <i data-feather="chevron-right" class="text-muted"></i>
-                        </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1326,8 +1401,122 @@
         }
     }
     
+    // Project Status Management
+    function updateProjectStatus(newStatus) {
+        fetch(`/editor/update_status/${projectId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the status badge
+                const statusBadge = document.getElementById('current-status-badge');
+                if (statusBadge) {
+                    statusBadge.textContent = newStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    statusBadge.className = 'badge ' + getStatusBadgeClass(newStatus);
+                }
+                
+                // Update progress bar
+                updateProgressBar(newStatus);
+                
+                // Update status indicators
+                updateStatusIndicators(newStatus);
+                
+                // Show success message
+                showStatusUpdateMessage(data.message);
+            } else {
+                alert('Failed to update status: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Status update error:', error);
+            alert('Failed to update status. Please try again.');
+        });
+    }
+    
+    function getStatusBadgeClass(status) {
+        switch(status) {
+            case 'draft': return 'bg-secondary';
+            case 'in_progress': return 'bg-primary';
+            case 'preview': return 'bg-info';
+            case 'generating_audio': return 'bg-warning';
+            case 'completed': return 'bg-success';
+            default: return 'bg-secondary';
+        }
+    }
+    
+    function updateProgressBar(status) {
+        const progressBar = document.getElementById('status-progress');
+        if (!progressBar) return;
+        
+        const progressMap = {
+            'draft': 20,
+            'in_progress': 40,
+            'preview': 60,
+            'generating_audio': 80,
+            'completed': 100
+        };
+        
+        const progress = progressMap[status] || 0;
+        progressBar.style.width = progress + '%';
+        progressBar.className = 'progress-bar ' + getStatusBadgeClass(status);
+    }
+    
+    function updateStatusIndicators(currentStatus) {
+        const statusItems = document.querySelectorAll('[data-status]');
+        statusItems.forEach(item => {
+            const itemStatus = item.getAttribute('data-status');
+            const icon = item.querySelector('.status-icon');
+            
+            if (itemStatus === currentStatus) {
+                item.classList.add('active');
+                if (icon) {
+                    icon.className = 'me-3 status-icon text-primary';
+                }
+            } else {
+                item.classList.remove('active');
+                if (icon) {
+                    icon.className = 'me-3 status-icon text-muted';
+                }
+            }
+        });
+    }
+    
+    function showStatusUpdateMessage(message) {
+        // Create a temporary success message
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        messageDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        messageDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(messageDiv);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (messageDiv.parentNode) {
+                messageDiv.parentNode.removeChild(messageDiv);
+            }
+        }, 3000);
+    }
+    
+    // Initialize status indicators on page load
+    function initializeStatusIndicators() {
+        const currentStatus = '{{ project.status }}';
+        updateProgressBar(currentStatus);
+        updateStatusIndicators(currentStatus);
+    }
+
     // Check if we should auto-edit a chapter after page reload
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize status indicators
+        initializeStatusIndicators();
         
         const autoEditChapterId = sessionStorage.getItem('autoEditChapter');
         if (autoEditChapterId) {
