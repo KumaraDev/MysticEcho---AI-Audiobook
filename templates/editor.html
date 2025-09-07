@@ -120,7 +120,6 @@
                         </button>
                         <div class="d-flex align-items-center mt-1">
                             <span class="badge bg-primary-subtle text-primary me-3">{{ project.status.replace('_', ' ').title() }}</span>
-                            <span class="text-muted small" id="word-count">0 words</span>
                             <span class="text-muted small ms-3" id="auto-save-status"></span>
                         </div>
                     </div>
@@ -748,11 +747,7 @@
                 if (mysticEditor) {
                     mysticEditor.currentContent = data.content || '';
                     mysticEditor.lastSavedContent = mysticEditor.currentContent;
-                    mysticEditor.updateWordCount();
                 }
-                
-                // Update word count display
-                updateWordCount();
                 
                 // Update save button text
                 document.getElementById('save-btn-text').textContent = 'Save Chapter';
@@ -1105,7 +1100,6 @@
         // Auto-save on content change
         contentTextarea.addEventListener('input', function() {
             scheduleChapterAutoSave();
-            updateWordCount();
         });
     }
     
@@ -1280,8 +1274,6 @@
                     hiddenTextarea.value = htmlContent;
                 }
                 
-                // Update word count
-                updateWordCount();
                 
                 // Schedule auto-save
                 scheduleChapterAutoSave();
@@ -1317,27 +1309,6 @@
         }
     }
     
-    function updateWordCount() {
-        let content = '';
-        if (quillEditor) {
-            // Get plain text content for word counting
-            content = quillEditor.getText();
-        } else {
-            content = document.getElementById('chapter-editor-content').value;
-        }
-        
-        const words = content.trim() === '' ? 0 : content.trim().split(/\s+/).length;
-        
-        // Update the word count display
-        const wordCountElement = document.getElementById('word-count');
-        if (wordCountElement) {
-            wordCountElement.textContent = `${words} words`;
-        }
-        
-        if (mysticEditor) {
-            mysticEditor.currentContent = quillEditor ? quillEditor.root.innerHTML : content;
-        }
-    }
     
     function updateAutoSaveStatus(status) {
         const statusElement = document.getElementById('auto-save-status');
@@ -1348,8 +1319,6 @@
     
     // Check if we should auto-edit a chapter after page reload
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize word count
-        updateWordCount();
         
         const autoEditChapterId = sessionStorage.getItem('autoEditChapter');
         if (autoEditChapterId) {
