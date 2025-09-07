@@ -30,32 +30,6 @@ def edit_project(project_id):
     
     return render_template('editor.html', project=project, versions=recent_versions, chapters=chapters)
 
-@editor_bp.route('/project/<int:project_id>/chapters')
-@auth_required()
-def manage_chapters(project_id):
-    """Chapter management view"""
-    user_id = current_user.id
-    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
-    
-    if not project:
-        flash('Project not found.', 'error')
-        return redirect(url_for('dashboard.index'))
-    
-    chapters = Chapter.query.filter_by(project_id=project_id).order_by(Chapter.order_index).all()
-    
-    # Convert Chapter objects to dictionaries for JSON serialization
-    chapters_data = []
-    for chapter in chapters:
-        chapters_data.append({
-            'id': chapter.id,
-            'title': chapter.title,
-            'content': chapter.content,
-            'order_index': chapter.order_index,
-            'created_at': chapter.created_at.isoformat() if chapter.created_at else None,
-            'updated_at': chapter.updated_at.isoformat() if chapter.updated_at else None
-        })
-    
-    return render_template('editor/chapters.html', project=project, chapters=chapters_data)
 
 @editor_bp.route('/save_project/<int:project_id>', methods=['POST'])
 @auth_required()
