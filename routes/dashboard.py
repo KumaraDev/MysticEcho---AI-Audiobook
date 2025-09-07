@@ -158,3 +158,26 @@ def project_view(project_id):
         })
     
     return render_template('dashboard/project_view.html', project=project, chapters=chapters_data)
+
+@dashboard_bp.route('/project/<int:project_id>/chapter-saved')
+@auth_required()
+def chapter_saved_success(project_id):
+    """Chapter saved success view - completely different from project view"""
+    user_id = current_user.id
+    project = Project.query.filter_by(id=project_id, user_id=user_id).first()
+    
+    if not project:
+        flash('Project not found.', 'error')
+        return redirect(url_for('dashboard.index'))
+    
+    # Get chapters for this project
+    from models import Chapter
+    chapters = Chapter.query.filter_by(project_id=project_id).order_by(Chapter.order_index).all()
+    
+    # Calculate total word count
+    total_words = sum((chapter.content.split() if chapter.content else []).__len__() for chapter in chapters)
+    
+    return render_template('dashboard/chapter_saved_success.html', 
+                         project=project, 
+                         chapters=chapters, 
+                         total_words=total_words)

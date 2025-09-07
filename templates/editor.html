@@ -412,12 +412,10 @@
                 saveBtn.classList.add('btn-outline-success');
                 saveBtn.classList.remove('btn-success');
                 
+                // Redirect to success view after brief delay
                 setTimeout(() => {
-                    saveBtn.innerHTML = originalText;
-                    saveBtn.classList.remove('btn-outline-success');
-                    saveBtn.classList.add('btn-success');
-                    feather.replace();
-                }, 2000);
+                    window.location.href = `/dashboard/project/${projectId}/chapter-saved`;
+                }, 1500);
             }).catch(error => {
                 alert('Failed to save chapter: ' + error);
             });
@@ -882,8 +880,11 @@
                 throw new Error(data.error || 'Failed to save chapter');
             }
             
-            // Update the chapter title in the indicator
-            document.getElementById('current-chapter-title').textContent = title;
+            // Update the chapter title in the indicator with safety check
+            const currentChapterTitle = document.getElementById('current-chapter-title');
+            if (currentChapterTitle) {
+                currentChapterTitle.textContent = title;
+            }
             
             return data;
         });

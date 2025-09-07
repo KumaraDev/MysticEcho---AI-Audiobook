@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Chapter Saved - {{ project.title }} - Mystic Echo{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Success Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <div class="bg-success-subtle rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i data-feather="check-circle" class="text-success" style="width: 48px; height: 48px;"></i>
+                    </div>
+                </div>
+                <h1 class="text-success mb-3">Chapter Saved Successfully!</h1>
+                <p class="text-muted fs-5">Your work has been automatically saved and backed up.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Stats -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-center text-white py-5">
+                    <h2 class="mb-3">{{ project.title }}</h2>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <h3 class="display-4 fw-bold">{{ chapters|length }}</h3>
+                                <p class="mb-0 opacity-75">Chapters</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <h3 class="display-4 fw-bold">{{ total_words }}</h3>
+                                <p class="mb-0 opacity-75">Total Words</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <h3 class="display-4 fw-bold">{{ project.status.replace('_', ' ').title() }}</h3>
+                                <p class="mb-0 opacity-75">Status</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 h-100 text-center">
+                <div class="card-body d-flex flex-column">
+                    <div class="bg-primary-subtle rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width: 60px; height: 60px;">
+                        <i data-feather="edit" class="text-primary" style="width: 28px; height: 28px;"></i>
+                    </div>
+                    <h5 class="card-title">Continue Writing</h5>
+                    <p class="card-text text-muted">Go back to the editor to continue working on your chapters.</p>
+                    <a href="{{ url_for('editor.manage_chapters', project_id=project.id) }}" class="btn btn-primary mt-auto">
+                        <i data-feather="edit" class="me-2"></i>
+                        Open Editor
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 h-100 text-center">
+                <div class="card-body d-flex flex-column">
+                    <div class="bg-info-subtle rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width: 60px; height: 60px;">
+                        <i data-feather="eye" class="text-info" style="width: 28px; height: 28px;"></i>
+                    </div>
+                    <h5 class="card-title">Review Project</h5>
+                    <p class="card-text text-muted">View your project overview and manage all chapters.</p>
+                    <a href="{{ url_for('dashboard.project_view', project_id=project.id) }}" class="btn btn-outline-info mt-auto">
+                        <i data-feather="eye" class="me-2"></i>
+                        View Project
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 h-100 text-center">
+                <div class="card-body d-flex flex-column">
+                    <div class="bg-warning-subtle rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width: 60px; height: 60px;">
+                        <i data-feather="headphones" class="text-warning" style="width: 28px; height: 28px;"></i>
+                    </div>
+                    <h5 class="card-title">Preview Audio</h5>
+                    <p class="card-text text-muted">Listen to your audiobook as it's being created.</p>
+                    <button class="btn btn-outline-warning mt-auto" onclick="alert('Audio preview coming soon!')">
+                        <i data-feather="headphones" class="me-2"></i>
+                        Preview Audio
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Chapters -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h5 class="mb-0">
+                        <i data-feather="book-open" class="me-2"></i>
+                        Your Chapters
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if chapters %}
+                        <div class="row">
+                            {% for chapter in chapters %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title text-truncate">{{ chapter.title }}</h6>
+                                        <p class="card-text small text-muted">
+                                            {{ (chapter.content.split()|length) if chapter.content else 0 }} words
+                                        </p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                {% if chapter.updated_at %}
+                                                    Updated {{ chapter.updated_at.strftime('%m/%d/%Y') }}
+                                                {% else %}
+                                                    Created {{ chapter.created_at.strftime('%m/%d/%Y') if chapter.created_at else 'Recently' }}
+                                                {% endif %}
+                                            </small>
+                                            <a href="{{ url_for('editor.manage_chapters', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i data-feather="edit" style="width: 14px; height: 14px;"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i data-feather="file-plus" class="mb-2" style="width: 32px; height: 32px;"></i>
+                            <p class="mb-0">No chapters yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary">
+                    <i data-feather="arrow-left" class="me-2"></i>
+                    Back to Dashboard
+                </a>
+                <a href="{{ url_for('editor.manage_chapters', project_id=project.id) }}" class="btn btn-primary">
+                    <i data-feather="edit" class="me-2"></i>
+                    Continue Writing
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+</style>
+{% endblock %}
